@@ -5,5 +5,5 @@ import System.IO
 
 main = do
     contents <- readFile "exam.txt"
-    let asdf = (stringToProgram contents)
-    putStrLn asdf
+    let contents = strControl
+    putStrLn contents

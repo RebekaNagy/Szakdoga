@@ -1,7 +1,10 @@
 module Verification where
 import Parser
+------------------------------------- TYPES
 
 type Rule = Environment -> Program -> SideCondition -> Environment
+
+------------------------------------- PROGRAM FUNCTIONS
 
 prFunc_Skip :: Environment -> Environment
 prFunc_Skip (Env x) = (Env x)
@@ -19,9 +22,6 @@ prFunc_SetFieldValidity :: Environment -> String -> Validity-> Environment
 prFunc_SetFieldValidity (Env l) id v = Env (map (\x -> helper_SetFieldValidity x id v) l)
 --pl.: prFunc_SetFieldValidity initEnv "dstAddr" Invalid
 
-helper_SetFieldValidity :: Header -> String -> Validity -> Header
-helper_SetFieldValidity (hid, (hv, f)) id v = (hid, (hv, (map (\x@(id', v') -> if id' == id then (id, v) else x) f)))
-
 prFunc_If :: Environment -> Environment
 prFunc_If (Env l) = (Env l)
 
@@ -30,6 +30,8 @@ prFunc_Seq (Env l) = (Env l)
 
 prFunc_Table :: Environment -> Environment
 prFunc_Table (Env l) = (Env l)
+
+------------------------------------- CALCULATING FUNCTIONS
 
 fittingRule :: Program -> [Rule] -> Rule
 fittingRule pr [] = (\(Env l) PrError sidecons -> prFunc_Skip (Env l))
@@ -52,11 +54,19 @@ getValidity str (Env ((hid, (hv, fields)):xs))
         | otherwise = helperResult
         where helperResult = helper_getValidity str fields
 
+------------------------------------- HELPER FUNCTIONS
+
+helper_SetFieldValidity :: Header -> String -> Validity -> Header
+helper_SetFieldValidity (hid, (hv, f)) id v = (hid, (hv, (map (\x@(id', v') -> if id' == id then (id, v) else x) f)))
+
 helper_getValidity :: String -> [Field] -> Validity
 helper_getValidity str [] = Undefined
 helper_getValidity str (x:xs)
         | fst x == str = snd x
         | otherwise = helper_getValidity str xs
+
+
+------------------------------------- RULES
 
 initRules :: [Rule]
 initRules = [
@@ -73,13 +83,13 @@ initRules = [
                 SetFieldValidity str -> (prFunc_SetFieldValidity (Env l) str usedValidity)
                 _ -> EnvError),
         (\(Env l) pr sidecons -> case pr of
-                If pr1 pr2 -> prFunc_If (Env l)
+                If str pr1 pr2 -> prFunc_If (Env l)
                 _ -> EnvError),
         (\(Env l) pr sidecons -> case pr of
                 Seq pr1 pr2 -> prFunc_Seq (Env l)
                 _ -> EnvError),
         (\(Env l) pr sidecons -> case pr of
-                Table str prs -> prFunc_Table (Env l)
+                Table str keys prs -> prFunc_Table (Env l)
                 _ -> EnvError)
         ]
 
