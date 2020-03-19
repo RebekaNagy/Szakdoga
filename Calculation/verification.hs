@@ -1,5 +1,5 @@
 module Verification where
-import Parser
+import ParserOld
 ------------------------------------- TYPES
 
 type Rule = Environment -> Program -> SideCondition -> Environment

@@ -1,5 +1,6 @@
-header ethernet_t {
-    bit<48> dstAddr;
-    bit<48> srcAddr;
-    bit<16> etherType;
-}
+while not true do
+	if(x<5 and x > 3) then 
+		x := 5;
+		b := alma
+	else 
+		x := x + 1

@@ -1,187 +1,168 @@
 module Parser where
-import Data.String
-import Data.List
+import System.IO
+import Control.Monad
+import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec.Expr
+import Text.ParserCombinators.Parsec.Language
+import qualified Text.ParserCombinators.Parsec.Token as Token
 
-------------------------------------- TYPES
-data Validity =  
-    Valid
-    | Invalid
-    | Undefined deriving (Show, Eq) 
+data BExpr = 
+    BoolConst Bool
+    | Not BExpr
+    | BBinary BBinOp BExpr BExpr
+    | RBinary RBinOp AExpr AExpr
+    deriving (Show)
 
-type Field = (String, Validity)
+data BBinOp = And | Or deriving (Show)
 
-type Header = (String, (Validity, [Field]))
 
-data Environment = Env [Header] | EnvError deriving (Show, Eq)
+data RBinOp = Greater | Less deriving (Show)
 
-data Program =
-    PrError
-    | Skip
-    | Seq Program Program
-    | If String Program Program
-    | Table String [String] [Program]
-    | ActCons String Program
-    | ActAsgn String Integer
-    | Drop 
-    | SetHeaderValidity String
-    | SetFieldValidity String deriving Show
+data AExpr = Var String
+           | IntConst Integer
+           | Neg AExpr
+           | ABinary ABinOp AExpr AExpr
+             deriving (Show)
+data ABinOp = Add
+            | Subtract
+            | Multiply
+            | Divide
+              deriving (Show)
 
-data SideCondition = SideCon [String] deriving Show
+data Stmt = Seq [Stmt]
+          | Assign String AExpr
+          | If BExpr Stmt Stmt
+          | While BExpr Stmt
+          | Skip
+            deriving (Show)
 
-------------------------------------- MISC FUNCTIONS
+languageDef =
+  emptyDef { Token.commentStart    = "/*"
+           , Token.commentEnd      = "*/"
+           , Token.commentLine     = "//"
+           , Token.identStart      = letter
+           , Token.identLetter     = alphaNum
+           , Token.reservedNames   = [ "if"
+                                     , "then"
+                                     , "else"
+                                     , "while"
+                                     , "do"
+                                     , "skip"
+                                     , "true"
+                                     , "false"
+                                     , "not"
+                                     , "and"
+                                     , "or"
+                                     ]
+           , Token.reservedOpNames = ["+", "-", "*", "/", ":="
+                                     , "<", ">", "and", "or", "not"
+                                     ]
+           }
 
-takeUntil :: String -> String -> String
-takeUntil s [] = [] 
-takeUntil [] ys = [] 
-takeUntil s (y:ys) 
-    | isPrefixOf s (y:ys) = []
-    | otherwise = y : (takeUntil s (tail (y:ys)))
+lexer = Token.makeTokenParser languageDef
 
-strToProg :: String -> String
-strToProg asdf = asdf
+identifier = Token.identifier lexer -- parses an identifier
+reserved   = Token.reserved   lexer -- parses a reserved name
+reservedOp = Token.reservedOp lexer -- parses an operator
+parens     = Token.parens     lexer -- parses surrounding parenthesis:
+                                    --   parens p
+                                    -- takes care of the parenthesis and
+                                    -- uses p to parse what's inside them
+integer    = Token.integer    lexer -- parses an integer
+semi       = Token.semi       lexer -- parses a semicolon
+whiteSpace = Token.whiteSpace lexer -- parses whitespace
 
-------------------------------------- HEADER TO ENVIRONMENT FUNCTIONS
+whileParser :: Parser Stmt
+whileParser = whiteSpace >> statement
 
-strHeaderToList :: String -> [[String]]
-strHeaderToList headers = filter ((>1) . length) (map (\x -> (words . takeUntil ";") x) (lines headers))
--- pl. strHeaderToList strHeader
+statement :: Parser Stmt
+statement =   parens statement
+          <|> sequenceOfStmt
 
-listToHeader :: [[String]] -> Header
-listToHeader (x:xs) = (hid, (Invalid, (listToField xs hid)))
-    where hid = x!!1
--- pl. listToHeader (strHeaderToList strHeader)
+sequenceOfStmt =
+  do list <- (sepBy1 statement' semi)
+     -- If there's only one statement return it without using Seq.
+     return $ if length list == 1 then head list else Seq list
 
-listToField :: [[String]] -> String -> [Field]
-listToField [] hid = []
-listToField (x:xs) hid = ((hid ++ "." ++ (x!!1)), Valid) : (listToField xs hid)
+statement' :: Parser Stmt
+statement' =   ifStmt
+           <|> whileStmt
+           <|> skipStmt
+           <|> assignStmt
 
-concatHeaders :: Environment -> Header -> Environment
-concatHeaders (Env l) header = Env (l ++ [header])
--- pl. concatHeaders (concatHeaders initEnv (listToHeader (strHeaderToList strHeader1))) (listToHeader (strHeaderToList strHeader2))
+ifStmt :: Parser Stmt
+ifStmt =
+  do reserved "if"
+     cond  <- bExpression
+     reserved "then"
+     stmt1 <- statement
+     reserved "else"
+     stmt2 <- statement
+     return $ If cond stmt1 stmt2
 
-------------------------------------- CONTROL TO PROGRAM FUNCIONS
+whileStmt :: Parser Stmt
+whileStmt =
+  do reserved "while"
+     cond <- bExpression
+     reserved "do"
+     stmt <- statement
+     return $ While cond stmt
 
-strControlToList :: String -> [[String]]
-strControlToList control = filter ((>0) . length) (map (\x -> (words . takeUntil ";" . takeUntil "{") x) (lines control))
+assignStmt :: Parser Stmt
+assignStmt =
+  do var  <- identifier
+     reservedOp ":="
+     expr <- aExpression
+     return $ Assign var expr
 
-controlCutting :: [[String]] -> [Program] -> Program
-controlCutting [] pr = Table "a" ["a"] pr --hogy ne legyen gond a [Program]
-controlCutting (x:xs) pr
-    | x!!0 == "action" = controlCutting xs ((ActCons (takeUntil "()" (x!!1)) (proccessAction (xs))):pr)
-    | x!!0 == "table" = controlCutting xs ((proccessTable (x:xs) pr):pr)
-    | x!!0 == "apply" = controlCutting xs pr
-    | otherwise = controlCutting xs pr
---controlCutting (strControlToList strControl) initProg
+skipStmt :: Parser Stmt
+skipStmt = reserved "skip" >> return Skip
 
-proccessAction :: [[String]] -> Program
-proccessAction (x:xs)
---    | x!!0 == "action" = ActCons (x!!1) (proccessAction xs)
-    | isInfixOf "mark_to_drop" (x!!0) = Seq Drop (proccessAction xs)
-    | x!!0 == "}" = Skip
-    | isInfixOf "=" (x!!1) = Seq (ActAsgn (drop 1 (dropWhile (/= '.') (x!!0))) (read (x!!2))) (proccessAction xs)
+aExpression :: Parser AExpr
+aExpression = buildExpressionParser aOperators aTerm
 
-proccessTable :: [[String]] -> [Program] -> Program
-proccessTable (x:y:z:xs) prs
-    | (x!!0 == "table") && (y!!0 == "key") = Table (x!!1) (getKeys (z:xs)) (getActions xs prs)
-    | x!!0 == "table" = Table (x!!1) [] (getActions xs prs)
---    | x!!0 == "actions" = getActions xs
+bExpression :: Parser BExpr
+bExpression = buildExpressionParser bOperators bTerm
 
-getKeys :: [[String]] -> [String]
-getKeys (x:xs)
-    | x!!0 == "}" = []
-    | otherwise = (drop 1 (dropWhile (/= '.') (x!!0))) : getKeys xs
+aOperators = [ [Prefix (reservedOp "-"   >> return (Neg             ))          ]
+             , [Infix  (reservedOp "*"   >> return (ABinary Multiply)) AssocLeft,
+                Infix  (reservedOp "/"   >> return (ABinary Divide  )) AssocLeft]
+             , [Infix  (reservedOp "+"   >> return (ABinary Add     )) AssocLeft,
+                Infix  (reservedOp "-"   >> return (ABinary Subtract)) AssocLeft]
+              ]
 
-getActions :: [[String]] -> [Program] -> [Program]
-getActions (x:xs) prs
-    | x!!0 == "actions" = helper_getActions xs prs
-    | otherwise = getActions xs prs
+bOperators = [ [Prefix (reservedOp "not" >> return (Not             ))          ]
+             , [Infix  (reservedOp "and" >> return (BBinary And     )) AssocLeft,
+                Infix  (reservedOp "or"  >> return (BBinary Or      )) AssocLeft]
+             ]
 
-helper_getActions :: [[String]] -> [Program]-> [Program]
-helper_getActions (x:xs) prs
-    | x!!0 == "}" = []
-    | otherwise = (filter (\z -> case z of 
-                ActCons id pr -> if id == x!!0 then True else False
-                _ -> False) prs) ++ (helper_getActions xs prs)
+aTerm =  parens aExpression
+     <|> liftM Var identifier
+     <|> liftM IntConst integer
 
-------------------------------------- VARIABLES
+bTerm =  parens bExpression
+     <|> (reserved "true"  >> return (BoolConst True ))
+     <|> (reserved "false" >> return (BoolConst False))
+     <|> rExpression
 
-initEnv :: Environment
-initEnv = Env [("drop",(Invalid, []))]
+rExpression =
+  do a1 <- aExpression
+     op <- relation
+     a2 <- aExpression
+     return $ RBinary op a1 a2
 
-strHeader1 :: String
-strHeader1 = "header ethernet_t {\n\
-\    bit<48> dstAddr;\n\  
-\    bit<48> srcAddr;\n\  
-\    bit<16> etherType;\n\
-\}"
+relation =   (reservedOp ">" >> return Greater)
+         <|> (reservedOp "<" >> return Less)
 
-strHeader2 :: String
-strHeader2 = "header ipv4_t {\n\
-\    bit<8> ttl;\n\
-\    bit<16> hdrChecksum;\n\
-\    bit<32> srcAddr;\n\
-\    bit<32> dstAddr;\n\
-\}"
+parseString :: String -> Stmt
+parseString str =
+  case parse whileParser "" str of
+    Left e  -> error $ show e
+    Right r -> r
 
-initProg :: [Program]
-initProg = []
-
-usedStr :: String
-usedStr = "ipv4"
-
-usedValidity :: Validity
-usedValidity = Valid
-
-empSideCons :: SideCondition
-empSideCons = SideCon []
-
-ifSideCons :: SideCondition
-ifSideCons = SideCon ["a"]
-
-strActs :: String
-strActs = "action ipv4_ch() {\n\
-\   hdr.ethernet.srcAddr = 2;\n\
-\   hdr.ethernet.dstAddr = 1;\n\
-\   hdr.ipv4.ttl = 20;\n\
-\}"
-
-strControl :: String
-strControl = "control MyIngress(inout headers hdr,\n\
-\        inout metadata meta,\n\
-\        inout standard_metadata_t standard_metadata) {\n\
-\    \n\
-\        action drop() {\n\
-\            mark_to_drop(standard_metadata);\n\
-\        }\n\
-\         \n\
-\        action ipv4_ch() {\n\
-\            hdr.ethernet.srcAddr = 2;\n\
-\            hdr.ethernet.dstAddr = 1;\n\
-\            hdr.ipv4.ttl = 20;\n\
-\        }\n\
-\        \n\
-\        table ipv4_lpm {\n\
-\            key = {\n\
-\                hdr.ipv4.dstAddr: lpm;\n\
-\            }\n\
-\            actions = {\n\
-\                ipv4_ch;\n\
-\                drop;\n\
-\            }\n\
-\            size = 1024;\n\
-\            default_action = drop();\n\
-\        }\n\
-\        \n\
-\        apply {\n\
-\            if (hdr.ipv4.isValid()) {\n\
-\                ipv4_lpm.apply();\n\
-\            }\n\
-\        }\n\
-\}"
-
-exampleEnv :: Environment
-exampleEnv = Env [
-        ("drop", (Invalid, [])), 
-        ("ipv4", (Invalid, [("dstAddr", Valid),("srcAddr", Valid)])),
-        ("ethernet", (Valid, [("field1", Valid),("field2", Valid)]))
-        ]
+parseFile :: String -> IO Stmt
+parseFile file =
+  do program  <- readFile file
+     case parse whileParser "" program of
+       Left e  -> print e >> fail "parse error"
+       Right r -> return r
