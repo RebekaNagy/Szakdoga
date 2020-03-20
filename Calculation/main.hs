@@ -8,3 +8,4 @@ main = do
     contents <- readFile "exam.txt"
     let contents = strGress1
     putStrLn contents
+

@@ -43,16 +43,16 @@ fittingRule pr (x:xs)
 isValidSideCons :: SideCondition -> Environment -> Bool
 isValidSideCons (SideCon []) _ = True 
 isValidSideCons (SideCon (x:xs)) (Env l)
-        | getValidity x (Env l) == Valid = (isValidSideCons (SideCon xs) (Env l))
-        | otherwise = False
+    | getValidity x (Env l) == Valid = (isValidSideCons (SideCon xs) (Env l))
+    | otherwise = False
 
 getValidity :: String -> Environment -> Validity
 getValidity str (Env []) = Undefined
 getValidity str (Env ((hid, (hv, fields)):xs))
-        | hid == str = hv
-        | helperResult == Undefined = getValidity str (Env xs)
-        | otherwise = helperResult
-        where helperResult = helper_getValidity str fields
+    | hid == str = hv
+    | helperResult == Undefined = getValidity str (Env xs)
+    | otherwise = helperResult
+    where helperResult = helper_getValidity str fields
 
 ------------------------------------- HELPER FUNCTIONS
 
@@ -62,8 +62,8 @@ helper_SetFieldValidity (hid, (hv, f)) id v = (hid, (hv, (map (\x@(id', v') -> i
 helper_getValidity :: String -> [Field] -> Validity
 helper_getValidity str [] = Undefined
 helper_getValidity str (x:xs)
-        | fst x == str = snd x
-        | otherwise = helper_getValidity str xs
+    | fst x == str = snd x
+    | otherwise = helper_getValidity str xs
 
 
 ------------------------------------- RULES
@@ -71,8 +71,8 @@ helper_getValidity str (x:xs)
 initRules :: [Rule]
 initRules = [
         (\(Env l) pr sidecons -> case pr of
-                Drop -> prFunc_Drop (Env l)
-                _ -> EnvError),
+            Drop -> prFunc_Drop (Env l)
+            _ -> EnvError),
         (\(Env l) pr sidecons -> case pr of
                 Skip -> prFunc_Skip (Env l)
                 _ -> EnvError),
