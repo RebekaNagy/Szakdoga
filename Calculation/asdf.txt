@@ -1,0 +1,4 @@
+if 5 > 3 or 7 < 8 and not true then
+    x := 3
+else
+    x := 5

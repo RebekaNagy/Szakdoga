@@ -2,13 +2,15 @@ module Parser where
 import System.IO
 import Data.List
 import Data.String
+import Data.Char
 import Control.Monad
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
 
-data Statement = Skip
+data Statement = Error
+    | Skip
     | Seq [Statement]
     | Variable String
     | Header String [Variable] 
@@ -17,20 +19,24 @@ data Statement = Skip
     | State String Statement 
     | Transition String
     | TransitionSelect String [Variable] 
-    | FuncExpr FunctionExpression 
     | Control String [Statement]
     | DirectCount String 
     | Action String Statement
-    | Assignment String String 
+    | Assignment String ArithmeticExpression 
     | Drop 
     | Table Statement Statement
     | Keys [Variable]
     | Acts [String] 
     | Apply Statement 
-    | If Statement Statement 
+    | If Statement Statement Statement 
     | VerifyChecksum 
     | UpdateChecksum 
-    | V1Switch [String] deriving Show 
+    | V1Switch [String] 
+    | FuncExpr FunctionExpression 
+    | BoolExpr BoolExpression
+    | Include String
+    | Typedef
+    deriving Show 
 
 data Variable = Field String
     | StructField String
@@ -38,14 +44,32 @@ data Variable = Field String
     | ParameterVar Variable
     | Semi String String deriving Show
 
-data FunctionOperator = Extract
-    | Emit 
-    | Count
-    | ApplyFunc deriving Show
+data FunctionExpression = FuncVar String
+    | Count FunctionExpression
+    | ApplyFunc FunctionExpression
+    | SetValid FunctionExpression
+    | SetInvalid FunctionExpression
+    | Emit FunctionExpression FunctionExpression 
+    | Extract FunctionExpression FunctionExpression deriving Show
 
-data FunctionExpression = Var String
-    | UF FunctionOperator FunctionExpression
-    | BF FunctionOperator FunctionExpression FunctionExpression deriving Show
+data ArithmeticExpression = ArithVar String
+    | NumConstant String
+    | Negated ArithmeticExpression
+    | Add ArithmeticExpression ArithmeticExpression
+    | Subtract ArithmeticExpression ArithmeticExpression
+    | Multiply ArithmeticExpression ArithmeticExpression
+    | Divide ArithmeticExpression ArithmeticExpression deriving Show
+
+data BoolExpression = BoolVar String
+    | BoolConstant Bool 
+    | IsValid BoolExpression
+    | Not BoolExpression
+    | And BoolExpression BoolExpression
+    | Or BoolExpression BoolExpression
+    | Equal BoolExpression BoolExpression
+    | Inequal BoolExpression BoolExpression 
+    | Greater ArithmeticExpression ArithmeticExpression
+    | Less ArithmeticExpression ArithmeticExpression deriving Show
 
 languageDef =
     emptyDef { Token.commentStart    = "/*"
@@ -72,9 +96,12 @@ languageDef =
             , Token.reservedOpNames = [ "+", "-", "*", "/", "="
                                         , "<", ">", "&&", "||", "!="
                                         , "==", "!", ".count()", ".extract", ".emit", ".apply()"
+                                        , ".setValid()", ".setInvalid()"
+                                        , ".isValid()"
                                         ]
             , Token.identStart      = letter
-            , Token.identLetter     = alphaNum <|> char '_' <|> char '<' <|> char '>' <|> char '.'
+            , Token.identLetter     = alphaNum <|> char '_' <|> char '<' <|> char '>'
+                                    <|> char '.' <|> char '[' <|> char ']'
             }
 
 lexer = Token.makeTokenParser languageDef
@@ -108,7 +135,10 @@ sectionParser = headerSection
     <|> parserSection
     <|> controlSection
     <|> v1SwitchSection
-
+    <|> includeSection
+    <|> typedefSection
+    <|> constantSection
+    <|> tokenEater
 ------------------------------------- HEADER PARSER FUNCTIONS  
 headerSection :: Parser Statement
 headerSection = do   
@@ -152,17 +182,8 @@ parserSection = do
     return $ Parser block
 
 parserComponents :: Parser Statement
-parserComponents = constantAssignmentParser
-    <|> stateParser
-
-constantAssignmentParser :: Parser Statement
-constantAssignmentParser = do
-    reserved "const"
-    constType <- identifier
-    constName <- identifier
-    reservedOp "="
-    value <- manyTill anyChar $ try (reserved ";")
-    return Skip
+parserComponents = stateParser
+    <|> actionExpr
 
 stateParser :: Parser Statement
 stateParser = do
@@ -174,7 +195,7 @@ stateParser = do
 
 stateComponents = transitionSelectParser
     <|> transitionParser 
-    <|> functionExpr
+    <|> actionExpr
 
 transitionParser :: Parser Statement
 transitionParser = do
@@ -199,7 +220,7 @@ controlSection = do
     parameters <- parens parameterParser
     reserved "{"
     block <- manyTill controlComponents $ try (reserved "}")
-    return $ Control parserName block
+    return $ Parser.Control parserName block
 
 controlComponents :: Parser Statement
 controlComponents = direct_counterParser
@@ -226,8 +247,7 @@ actionParser = do
 
 actionComponents :: Parser Statement
 actionComponents = dropParser
---    <|> assignmentParser
-    <|> functionExpr
+    <|> actionExpr
 
 dropParser :: Parser Statement
 dropParser = do
@@ -249,8 +269,7 @@ tableParser = do
     reservedOp "="
     reserved "{"
     actions <- manyTill actsParser $ try (reserved "}")
---    assigns <- manyTill assignmentParser $ try (reserved "}")
-    reserved "}"
+    assigns <- manyTill actionExpr $ try (reserved "}")
     return $ Table (Keys keys) (Acts actions)
 
 actsParser :: Parser String
@@ -270,16 +289,16 @@ applyComponents :: Parser Statement
 applyComponents = ifParser 
     <|> verifychecksumParser
     <|> updatechecksumParser
-    <|> functionExpr
+    <|> actionExpr
 
 ifParser :: Parser Statement
 ifParser = do 
     reserved "if"
-    params <- parens parameterParser
+    cond <- parens boolExpr
     reserved "{"
     block <- manyTill applyComponents $ try (reserved "}")
     elseBlock <- option Skip elseParser
-    return $ If (Seq block) elseBlock
+    return $ If cond (Seq block) elseBlock
 
 elseParser :: Parser Statement
 elseParser = do
@@ -291,21 +310,21 @@ elseParser = do
 verifychecksumParser :: Parser Statement
 verifychecksumParser = do
     reserved "verify_checksum"
-    block <- tokenEater
+    block <- manyTill tokenEater $ lookAhead (char ';')
     reserved ";"
     return VerifyChecksum
 
 updatechecksumParser :: Parser Statement
 updatechecksumParser = do
     reserved "update_checksum"
-    block <- tokenEater
+    block <- manyTill tokenEater $ lookAhead (char ';')
     reserved ";"
     return UpdateChecksum
 
-tokenEater :: Parser String
+tokenEater :: Parser Statement
 tokenEater = do
-    str <- manyTill anyToken  $ lookAhead (char ';')
-    return str
+    str <- anyToken
+    return Error
 
 ------------------------------------- V1SWITCH PARSER FUNCTIONS
 v1SwitchSection :: Parser Statement
@@ -332,6 +351,30 @@ funcParameterParser = do
     reserved ")"
     return funcparam
 
+------------------------------------- INCLUDE PARSER FUNCTIONS
+includeSection :: Parser Statement
+includeSection = do
+    reserved "#include"
+    reservedOp "<"
+    id <- manyTill anyChar $ lookAhead (char '>')
+    reserved ">"
+    return $ Include id
+
+------------------------------------- TYPEDEF PARSER FUNCTIONS
+typedefSection :: Parser Statement
+typedefSection = do
+    reserved "typedef"
+    typedef <- manyTill anyToken  $ lookAhead (char ';')
+    reserved ";"
+    return $ Typedef
+
+------------------------------------- CONSTANT PARSER FUNCTIONS
+constantSection :: Parser Statement
+constantSection = do
+    reserved "const"
+    expr <- actionExpr
+    return $ expr
+
 ------------------------------------- MISC PARSER FUNCTIONS
 identifierParser :: Parser Variable
 identifierParser = do
@@ -354,24 +397,108 @@ parameterParser = do
     list <- manyTill ((reserved ",") >> identifierParser) $ lookAhead (char ')')
     return $ ParameterVar id
 
-functionExpr :: Parser Statement
-functionExpr = do
-    expr <- buildFunctionExpr
-    reserved ";"
-    return $ FuncExpr expr
+trim :: String -> String
+trim = f . f
+    where f = reverse . dropWhile isSpace
+------------------------------------- FUNCTION EXPRESSION PARSER FUNCTIONS
+actionExpr :: Parser Statement
+actionExpr = do
+    var <- (manyTill anyChar (lookAhead (reservedOp ".extract"
+                                                <|> reservedOp ".emit"
+                                                <|> reservedOp ".count()"
+                                                <|> reservedOp ".apply()"
+                                                <|> reservedOp ".setValid()"
+                                                <|> reservedOp ".setInvalid()"
+                                                <|> reservedOp "=")))
+    isassign <- option "" (symbol "=")
+    case isassign of
+        "" -> do
+            expr <- buildFunctionExpr var
+            reserved ";"
+            return $ FuncExpr expr
+        _ -> do
+            expr <- buildArithmeticExpr
+            reserved ";"
+            return $ Assignment (trim var) expr
 
-buildFunctionExpr :: Parser FunctionExpression
-buildFunctionExpr = buildExpressionParser functionOperator functionTerm
+buildFunctionExpr :: String -> Parser FunctionExpression
+buildFunctionExpr str = buildExpressionParser functionOperator (functionTerm str)
 
 functionOperator = [
-    [Infix (reservedOp ".extract" >> return (BF Extract)) AssocLeft,
-    Infix  (reservedOp ".emit"  >> return (BF Emit)) AssocLeft,
-    Postfix  (reservedOp ".count()"  >> return (UF Count)),
-    Postfix  (reservedOp ".apply()"  >> return (UF ApplyFunc)) ]]
+    [Infix (reservedOp ".extract" >> return (Extract)) AssocLeft,
+    Infix  (reservedOp ".emit"  >> return (Emit)) AssocLeft,
+    Postfix  (reservedOp ".count()"  >> return (Count)),
+    Postfix  (reservedOp ".apply()"  >> return (ApplyFunc)),
+    Postfix  (reservedOp ".setValid()"  >> return (SetValid)),
+    Postfix  (reservedOp ".setInvalid()"  >> return (SetInvalid)) ]]
 
-functionTerm = liftM Var (parens identifier)
-    <|> liftM Var (manyTill anyChar (lookAhead (char '.')))
+functionTerm :: String -> Parser FunctionExpression
+functionTerm str = liftM FuncVar (parens identifier)
+    <|> liftM FuncVar (option str (string "nothing"))
 
+------------------------------------- ARITHMETIC EXPRESSION PARSER FUNCTIONS
+
+buildArithmeticExpr :: Parser ArithmeticExpression
+buildArithmeticExpr = buildExpressionParser arithmeticOperator arithmeticTerm
+
+arithmeticOperator = [ 
+    [Prefix (reservedOp "-" >> return (Negated))],
+    [Infix  (reservedOp "*" >> return (Multiply)) AssocLeft,
+    Infix  (reservedOp "/" >> return (Divide)) AssocLeft],
+    [Infix  (reservedOp "+" >> return (Add)) AssocLeft,
+    Infix  (reservedOp "-" >> return (Subtract)) AssocLeft]]
+
+arithmeticTerm = parens buildArithmeticExpr
+    <|> liftM ArithVar (do 
+        id <- identifier 
+        o <- (option "" (string "()"))
+        spaces
+        return id)
+    <|> liftM NumConstant (many (digit <|> letter))
+
+------------------------------------- BOOLEAN EXPRESSION PARSER FUNCTIONS
+boolExpr :: Parser Statement
+boolExpr = do
+    expr <- buildBoolExpr
+    return $ BoolExpr expr
+
+buildBoolExpr :: Parser BoolExpression
+buildBoolExpr = buildExpressionParser boolOperator boolTerm
+
+boolOperator = [ 
+    [Prefix (reservedOp "!" >> return (Not)),
+    Postfix (reservedOp ".isValid()" >> return IsValid)],
+    [Infix  (reservedOp "&&" >> return (And)) AssocLeft,
+    Infix  (reservedOp "||"  >> return (Or)) AssocLeft]]
+
+boolTerm = parens buildBoolExpr
+    <|> (reserved "true"  >> return (BoolConstant True ))
+    <|> (reserved "false" >> return (BoolConstant False))
+    <|> relationExpr
+    <|> liftM BoolVar (do
+        var <- (manyTill anyChar (lookAhead (reservedOp ".isValid()"
+                                                <|> reservedOp "||"
+                                                <|> reservedOp "&&"
+                                                <|> reservedOp "!="
+                                                <|> reservedOp "!"
+                                                <|> reservedOp "=="
+                                                <|> reservedOp "<="
+                                                <|> reservedOp "<"
+                                                <|> reservedOp ">="
+                                                <|> reservedOp ">"
+                                                )))
+        return (trim var))
+
+relationExpr = do 
+    a1 <- buildArithmeticExpr
+    op <- relation
+    a2 <- buildArithmeticExpr
+    return $ op a1 a2
+
+relation = (reservedOp ">" >> return Greater)
+    <|> (reservedOp "<" >> return Less)
+    <|> (reservedOp ">=" >> return Greater)
+    <|> (reservedOp "<=" >> return Less)
 ------------------------------------- FUNCTIONS TO RUN THE PARSER
 
 parseString :: String -> [Statement]
@@ -386,4 +513,38 @@ parseFile file = do
         Left e  -> print e >> fail "parse error"
         Right r -> return r
 
--- test: parseFile "file.txt"
+-- test -> :main
+
+strGress1 :: String
+strGress1 = "control MyIngress(inout headers hdr,\n\
+\        inout metadata meta,\n\
+\        inout standard_metadata_t standard_metadata) {\n\
+\       \n\
+\        action drop() {\n\
+\            mark_to_drop(standard_metadata);\n\
+\        }\n\
+\         \n\
+\        action ipv4_ch() {\n\
+\            hdr.ethernet.srcAddr = 2;\n\
+\            hdr.ethernet.dstAddr = 1;\n\
+\            hdr.ipv4.ttl = 20;\n\
+\        }\n\
+\        \n\
+\        table ipv4_lpm {\n\
+\            key = {\n\
+\                hdr.ipv4.dstAddr: lpm;\n\
+\            }\n\
+\            actions = {\n\
+\                ipv4_ch;\n\
+\                drop;\n\
+\            }\n\
+\            size = 1024;\n\
+\            default_action = drop();\n\
+\        }\n\
+\        \n\
+\        apply {\n\
+\            if (hdr.ipv4 > 2) {\n\
+\                ipv4_lpm.apply();\n\
+\            }\n\
+\        }\n\
+\}"
