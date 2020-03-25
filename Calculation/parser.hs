@@ -12,7 +12,6 @@ import qualified Text.ParserCombinators.Parsec.Token as Token
 data Statement = Error
     | Skip
     | Seq [Statement]
-    | Variable String
     | Header String [Variable] 
     | Struct String [Variable] 
     | Parser [Statement] 
@@ -23,7 +22,8 @@ data Statement = Error
     | DirectCount String 
     | Action String Statement
     | Assignment String ArithmeticExpression 
-    | Drop 
+    | Drop
+    | Hash
     | Table Statement Statement
     | Keys [Variable]
     | Acts [String] 
@@ -42,7 +42,8 @@ data Variable = Field String
     | StructField String
     | VarElements [String]
     | ParameterVar Variable
-    | Semi String String deriving Show
+    | Semi String String 
+    | Var String deriving Show
 
 data FunctionExpression = FuncVar String
     | Count FunctionExpression
@@ -61,15 +62,15 @@ data ArithmeticExpression = ArithVar String
     | Divide ArithmeticExpression ArithmeticExpression deriving Show
 
 data BoolExpression = BoolVar String
-    | BoolConstant Bool 
+    | BoolConstant Bool
     | IsValid BoolExpression
     | Not BoolExpression
     | And BoolExpression BoolExpression
     | Or BoolExpression BoolExpression
     | Equal BoolExpression BoolExpression
     | Inequal BoolExpression BoolExpression 
-    | Greater ArithmeticExpression ArithmeticExpression
-    | Less ArithmeticExpression ArithmeticExpression deriving Show
+    | Greater BoolExpression BoolExpression
+    | Less BoolExpression BoolExpression deriving Show
 
 languageDef =
     emptyDef { Token.commentStart    = "/*"
@@ -247,6 +248,7 @@ actionParser = do
 
 actionComponents :: Parser Statement
 actionComponents = dropParser
+    <|> hashParser
     <|> actionExpr
 
 dropParser :: Parser Statement
@@ -256,27 +258,46 @@ dropParser = do
     reserved ";"
     return $ Drop
 
+hashParser :: Parser Statement
+hashParser = do
+    reserved "hash"
+    block <- manyTill tokenEater $ lookAhead (char ';')
+    reserved ";"
+    return $ Hash
+
 tableParser :: Parser Statement
 tableParser = do
     reserved "table"
     tableName <- identifier
     reserved "{"
-    reserved "key"
-    reservedOp "="
-    reserved "{"
-    keys <- manyTill semicolonParser $ try (reserved "}") 
+    keys <- option (Keys [Var "none"]) keysParser
     reserved "actions"
     reservedOp "="
     reserved "{"
     actions <- manyTill actsParser $ try (reserved "}")
     assigns <- manyTill actionExpr $ try (reserved "}")
-    return $ Table (Keys keys) (Acts actions)
+    return $ Table (keys) (Acts actions)
+
+keysParser :: Parser Statement
+keysParser = do
+    reserved "key"
+    reservedOp "="
+    reserved "{"
+    keys <- manyTill semicolonParser $ try (reserved "}")
+    return $ Keys keys
 
 actsParser :: Parser String
 actsParser = do
+    atparse <- option Skip atParser
     action <- identifier
     reserved ";"
-    return action 
+    return action
+
+atParser :: Parser Statement
+atParser = do
+    symbol "@"
+    id <- identifier
+    return Skip
 
 applyParser :: Parser Statement
 applyParser = do
@@ -467,38 +488,34 @@ buildBoolExpr = buildExpressionParser boolOperator boolTerm
 
 boolOperator = [ 
     [Prefix (reservedOp "!" >> return (Not)),
-    Postfix (reservedOp ".isValid()" >> return IsValid)],
+    Postfix (reservedOp ".isValid()" >> return IsValid),
+    Infix (reservedOp ">" >> return (Greater)) AssocLeft,
+    Infix (reservedOp "<" >> return (Less)) AssocLeft,
+    Infix (reservedOp ">=" >> return (Greater)) AssocLeft,
+    Infix (reservedOp "<=" >> return (Less)) AssocLeft,
+    Infix (reservedOp "==" >> return (Equal)) AssocLeft,
+    Infix (reservedOp "!=" >> return (Inequal)) AssocLeft],
     [Infix  (reservedOp "&&" >> return (And)) AssocLeft,
     Infix  (reservedOp "||"  >> return (Or)) AssocLeft]]
 
 boolTerm = parens buildBoolExpr
     <|> (reserved "true"  >> return (BoolConstant True ))
     <|> (reserved "false" >> return (BoolConstant False))
-    <|> relationExpr
-    <|> liftM BoolVar (do
+    <|> liftM BoolVar (do 
         var <- (manyTill anyChar (lookAhead (reservedOp ".isValid()"
-                                                <|> reservedOp "||"
-                                                <|> reservedOp "&&"
-                                                <|> reservedOp "!="
-                                                <|> reservedOp "!"
-                                                <|> reservedOp "=="
-                                                <|> reservedOp "<="
-                                                <|> reservedOp "<"
-                                                <|> reservedOp ">="
-                                                <|> reservedOp ">"
-                                                )))
+                                            <|> reservedOp "||"
+                                            <|> reservedOp "&&"
+                                            <|> reservedOp "!="
+                                            <|> reservedOp "!"
+                                            <|> reservedOp "=="
+                                            <|> reservedOp "<="
+                                            <|> reservedOp "<"
+                                            <|> reservedOp ">="
+                                            <|> reservedOp ">"
+                                            <|> reservedOp ")"
+                                            )))
         return (trim var))
 
-relationExpr = do 
-    a1 <- buildArithmeticExpr
-    op <- relation
-    a2 <- buildArithmeticExpr
-    return $ op a1 a2
-
-relation = (reservedOp ">" >> return Greater)
-    <|> (reservedOp "<" >> return Less)
-    <|> (reservedOp ">=" >> return Greater)
-    <|> (reservedOp "<=" >> return Less)
 ------------------------------------- FUNCTIONS TO RUN THE PARSER
 
 parseString :: String -> [Statement]

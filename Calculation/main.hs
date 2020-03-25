@@ -4,7 +4,7 @@ import Parser
 import System.IO
 
 main = do
-    contents <- readFile "exam.txt"
+    contents <- readFile "file.txt"
     let result = parseString contents
     print result
 
