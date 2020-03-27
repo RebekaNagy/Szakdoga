@@ -10,25 +10,25 @@ import Text.ParserCombinators.Parsec.Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
 
 data Statement = Error
-    | Skip
-    | Seq [Statement]
-    | Header String [Variable] 
-    | Struct String [Variable] 
+    | ParserSkip
+    | ParserSeq [Statement]
+    | ParserHeader String [Variable] 
+    | ParserStruct String [Variable] 
     | Parser [Statement] 
     | State String Statement 
     | Transition String
     | TransitionSelect String [Variable] 
     | Control String [Statement]
     | DirectCount String 
-    | Action String Statement
-    | Assignment String ArithmeticExpression 
-    | Drop
+    | ParserAction String Statement
+    | ParserAssignment String ArithmeticExpression 
+    | ParserDrop
     | Hash
-    | Table Statement Statement
+    | ParserTable String Statement Statement
     | Keys [Variable]
     | Acts [String] 
     | Apply Statement 
-    | If Statement Statement Statement 
+    | ParserIf Statement Statement Statement 
     | VerifyChecksum 
     | UpdateChecksum 
     | V1Switch [String] 
@@ -38,8 +38,8 @@ data Statement = Error
     | Typedef
     deriving Show 
 
-data Variable = Field String
-    | StructField String
+data Variable = ParserField (String, String)
+    | StructField (String, String)
     | VarElements [String]
     | ParameterVar Variable
     | Semi String String 
@@ -147,14 +147,14 @@ headerSection = do
     headerName <- identifier
     reserved "{" 
     fields <- manyTill (headerFieldParser headerName) $ try (reserved "}")
-    return $ Header headerName fields
+    return $ ParserHeader headerName fields
 
 headerFieldParser :: String -> Parser Variable
 headerFieldParser headerName = do
     fieldType <- identifier
     fieldName <- identifier
     reserved ";"
-    return $ Field (headerName ++ "." ++ fieldName) 
+    return $ ParserField (fieldType, fieldName)
 
 ------------------------------------- STRUCT PARSER FUNCTIONS
 structSection :: Parser Statement
@@ -163,14 +163,14 @@ structSection = do
     structName <- identifier
     reserved "{"
     fields <- manyTill structFieldParser $ try (reserved "}")
-    return $ Struct structName fields
+    return $ ParserStruct structName fields
 
 structFieldParser :: Parser Variable
 structFieldParser = do
     fieldType <- identifier
     fieldName <- identifier
     reserved ";"
-    return $ StructField fieldName
+    return $ StructField (fieldType, fieldName)
 
 ------------------------------------- PARSER PARSER FUNCTIONS
 parserSection :: Parser Statement
@@ -192,7 +192,7 @@ stateParser = do
     stateName <- identifier
     reserved "{"
     block <- manyTill stateComponents $ try (reserved "}")
-    return $ Parser.State stateName (Seq block)
+    return $ Parser.State stateName (ParserSeq block)
 
 stateComponents = transitionSelectParser
     <|> transitionParser 
@@ -244,7 +244,7 @@ actionParser = do
     param <- parens parameterParser
     reserved "{"
     block <- manyTill actionComponents $ try (reserved "}")
-    return $ Action name (Seq block)
+    return $ ParserAction name (ParserSeq block)
 
 actionComponents :: Parser Statement
 actionComponents = dropParser
@@ -256,7 +256,7 @@ dropParser = do
     reserved "mark_to_drop"
     param <- parens parameterParser
     reserved ";"
-    return $ Drop
+    return $ ParserDrop
 
 hashParser :: Parser Statement
 hashParser = do
@@ -276,7 +276,7 @@ tableParser = do
     reserved "{"
     actions <- manyTill actsParser $ try (reserved "}")
     assigns <- manyTill actionExpr $ try (reserved "}")
-    return $ Table (keys) (Acts actions)
+    return $ ParserTable tableName (keys) (Acts actions)
 
 keysParser :: Parser Statement
 keysParser = do
@@ -288,7 +288,7 @@ keysParser = do
 
 actsParser :: Parser String
 actsParser = do
-    atparse <- option Skip atParser
+    atparse <- option ParserSkip atParser
     action <- identifier
     reserved ";"
     return action
@@ -297,14 +297,14 @@ atParser :: Parser Statement
 atParser = do
     symbol "@"
     id <- identifier
-    return Skip
+    return ParserSkip
 
 applyParser :: Parser Statement
 applyParser = do
     reserved "apply"
     reserved "{"
     block <- manyTill applyComponents $ try (reserved "}")
-    return $ Apply (Seq block)
+    return $ Apply (ParserSeq block)
 
 applyComponents :: Parser Statement
 applyComponents = ifParser 
@@ -318,15 +318,15 @@ ifParser = do
     cond <- parens boolExpr
     reserved "{"
     block <- manyTill applyComponents $ try (reserved "}")
-    elseBlock <- option Skip elseParser
-    return $ If cond (Seq block) elseBlock
+    elseBlock <- option ParserSkip elseParser
+    return $ ParserIf cond (ParserSeq block) elseBlock
 
 elseParser :: Parser Statement
 elseParser = do
     reserved "else"
     reserved "{"
     block <- manyTill applyComponents $ try (reserved "}")
-    return $ Seq block
+    return $ ParserSeq block
 
 verifychecksumParser :: Parser Statement
 verifychecksumParser = do
@@ -440,7 +440,7 @@ actionExpr = do
         _ -> do
             expr <- buildArithmeticExpr
             reserved ";"
-            return $ Assignment (trim var) expr
+            return $ ParserAssignment (trim var) expr
 
 buildFunctionExpr :: String -> Parser FunctionExpression
 buildFunctionExpr str = buildExpressionParser functionOperator (functionTerm str)

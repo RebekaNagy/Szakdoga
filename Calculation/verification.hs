@@ -1,6 +1,30 @@
 module Verification where
-import Preparation
 ------------------------------------- TYPES
+data Validity =  
+    Valid
+    | Invalid
+    | Undefined deriving (Show, Eq) 
+
+type Field = (String, Validity)
+
+type Header = (String, (Validity, [Field]))
+
+data Environment = Env [Header] | EnvError deriving (Show, Eq)
+
+data Program =
+    PrError
+    | Skip
+    | Seq Program Program
+    | If String Program Program
+    | Table String [String] [Program]
+    | ActCons String Program
+    | ActAssignment [String]
+    | Drop 
+    | SetHeaderValidity (String, Validity)
+    | SetFieldValidity String Validity deriving (Show, Eq)
+
+data SideCondition = SideCon [String] deriving Show
+
 
 type Rule = Environment -> Program -> SideCondition -> Environment
 
@@ -36,7 +60,7 @@ prFunc_Table (Env l) = (Env l)
 fittingRule :: Program -> [Rule] -> Rule
 fittingRule pr [] = (\(Env l) PrError sidecons -> prFunc_Skip (Env l))
 fittingRule pr (x:xs) 
-    | x initEnv pr empSideCons == EnvError = fittingRule pr xs
+    | x exampleEnv pr empSideCons == EnvError = fittingRule pr xs
     | otherwise = x
 --pl.: (fittingRule Drop initRules) initEnv Drop empSideCons
 
@@ -77,10 +101,10 @@ initRules = [
                 Skip -> prFunc_Skip (Env l)
                 _ -> EnvError),
         (\(Env l) pr sidecons -> case pr of
-                SetHeaderValidity str -> (prFunc_SetHeaderValidity (Env l) str usedValidity)
+                SetHeaderValidity (str,v) -> (prFunc_SetHeaderValidity (Env l) str usedValidity)
                 _ -> EnvError),
         (\(Env l) pr sidecons -> case pr of
-                SetFieldValidity str -> (prFunc_SetFieldValidity (Env l) str usedValidity)
+                SetFieldValidity str v -> (prFunc_SetFieldValidity (Env l) str usedValidity)
                 _ -> EnvError),
         (\(Env l) pr sidecons -> case pr of
                 If str pr1 pr2 -> prFunc_If (Env l)
@@ -93,3 +117,21 @@ initRules = [
                 _ -> EnvError)
         ]
 
+usedStr :: String
+usedStr = "ipv4"
+
+usedValidity :: Validity
+usedValidity = Valid
+
+empSideCons :: SideCondition
+empSideCons = SideCon []
+
+ifSideCons :: SideCondition
+ifSideCons = SideCon ["a"]
+
+exampleEnv :: Environment
+exampleEnv = Env [
+        ("drop", (Invalid, [])), 
+        ("ipv4", (Invalid, [("dstAddr", Valid),("srcAddr", Valid)])),
+        ("ethernet", (Valid, [("field1", Valid),("field2", Valid)]))
+        ]
