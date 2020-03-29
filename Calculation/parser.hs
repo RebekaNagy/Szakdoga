@@ -46,6 +46,7 @@ data Variable = ParserField (String, String)
     | Var String deriving Show
 
 data FunctionExpression = FuncVar String
+    | ActionVar String
     | Count FunctionExpression
     | ApplyFunc FunctionExpression
     | SetValid FunctionExpression
@@ -430,13 +431,19 @@ actionExpr = do
                                                 <|> reservedOp ".apply()"
                                                 <|> reservedOp ".setValid()"
                                                 <|> reservedOp ".setInvalid()"
-                                                <|> reservedOp "=")))
+                                                <|> reservedOp "="
+                                                <|> reservedOp "("
+                                                <|> reservedOp ";")))
     isassign <- option "" (symbol "=")
     case isassign of
         "" -> do
-            expr <- buildFunctionExpr var
-            reserved ";"
-            return $ FuncExpr expr
+            iscontrol <- option "" (symbol "()")
+            case iscontrol of
+                "" -> do
+                    expr <- buildFunctionExpr var
+                    reserved ";"
+                    return $ FuncExpr expr
+                _ -> return $ FuncExpr (ActionVar var)
         _ -> do
             expr <- buildArithmeticExpr
             reserved ";"

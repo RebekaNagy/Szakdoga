@@ -15,7 +15,7 @@ data Program =
     PrError
     | Skip
     | Seq Program Program
-    | If String Program Program
+    | If [String] Program Program
     | Table String [String] [Program]
     | ActCons String Program
     | ActAssignment [String]
