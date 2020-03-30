@@ -1,0 +1,57 @@
+﻿<Window x:Class="P4Verification.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:P4Verification"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="500" Width="900">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Label Margin="10,9,285,0" 
+               Content="Input betöltése fájlból:" 
+               Height="26" 
+               VerticalAlignment="Top"/>
+        <Button Command="{Binding ReadInputCommand}" 
+                Margin="0,5,0,0" 
+                HorizontalAlignment="Center" 
+                Width="140" Height="30" 
+                VerticalAlignment="Top" 
+                Content="Fájl megnyitása"/>
+        <TextBox Text="{Binding Input}" 
+                 Width="350" Margin="10,40,0,10"
+                 HorizontalAlignment="Left" 
+                 VerticalScrollBarVisibility="Auto" 
+                 HorizontalScrollBarVisibility="Auto" 
+                 BorderThickness="3,3,3,3" 
+                 AcceptsReturn="True" 
+                 AcceptsTab="True"
+                 Background="#FFD4D4D4" />
+        <Label Grid.Column="1" 
+               Margin="13,10,0,0" 
+               HorizontalAlignment="Left" 
+               Width="108" Height="25" 
+               VerticalAlignment="Top" 
+               Content="Eredmény"/>
+        <Button Command="{Binding CalculateCommand}" 
+                Grid.Column="1"
+                Width="140" Height="30" 
+                Margin="85,5,0,0" 
+                VerticalAlignment="Top" 
+                HorizontalAlignment="Left" 
+                Content="Verifikáció"></Button>
+        <ScrollViewer Grid.Column="1"
+                      Margin="35,40,0,10">
+            <TextBlock Text="{Binding Output}" 
+                       Grid.Column="1" 
+                       Margin="35,40,0,10" 
+                       ScrollViewer.HorizontalScrollBarVisibility="Visible" 
+                       ScrollViewer.VerticalScrollBarVisibility="Visible" 
+                       ScrollViewer.CanContentScroll="True"
+                       HorizontalAlignment="Left" />
+        </ScrollViewer>
+    </Grid>
+</Window>

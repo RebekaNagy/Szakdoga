@@ -5,7 +5,7 @@ import Preparation
 import System.IO
 
 main = do
-    contents <- readFile "file.txt"
+    contents <- readFile "file.p4"
     let result = parseString contents
     print result
     let out = mainConversion result ((initEnv, finalEnv), (initActions, initTables, initProg))
