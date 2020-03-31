@@ -572,3 +572,6 @@ strGress1 = "control MyIngress(inout headers hdr,\n\
 \            }\n\
 \        }\n\
 \}"
+
+helpString :: String
+helpString = "control MyIngress(inout headers hdr,\ninout metadata meta,\ninout standard_metadata_t standard_metadata) {\n\naction drop() {\nmark_to_drop(standard_metadata);\n}\naction ipv4_ch() {\nhdr.ethernet.srcAddr = 2;\nhdr.ethernet.dstAddr = 1;\nhdr.ipv4.ttl = 20;\n}\n\ntable ipv4_lpm {\nkey = {\nhdr.ipv4.dstAddr: lpm;\n}\n actions = {\nipv4_ch;\ndrop;\n}\nsize = 1024;\ndefault_action = drop();\n}\n\napply {\nif (hdr.ipv4 > 2) {\nipv4_lpm.apply();\n}\n}\n}"

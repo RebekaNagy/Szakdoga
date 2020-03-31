@@ -1,16 +1,19 @@
-module Main (main) where
+module Main where
 import Verification
 import Parser
 import Preparation
 import System.IO
+import System.Environment
 
+main :: IO String 
 main = do
-    contents <- readFile "file.p4"
-    let result = parseString contents
+    contents <- getArgs
+    let result = parseString (head contents)
     print result
     let out = mainConversion result ((initEnv, finalEnv), (initActions, initTables, initProg))
     let first = fst out
     let second = snd out
+    let strprog = programToString second
     putStrLn "Initial:"
     print (fst first)
     putStrLn ""
@@ -19,4 +22,6 @@ main = do
     putStrLn ""
     putStrLn "Program:"
     print second
-
+    putStrLn "Program as string:"
+    putStr strprog
+    return strprog

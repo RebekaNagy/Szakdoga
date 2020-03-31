@@ -189,3 +189,24 @@ initActions = []
 
 initTables :: [Program]
 initTables = []
+
+programToString ::[Program] -> String
+programToString [] = "\n"
+programToString (x:xs) = dataToString x ++ programToString xs
+
+dataToString :: Program -> String
+dataToString (PrError) = "Error. "
+dataToString (Skip) = "Skip "
+dataToString (Seq pr1 pr2) = "Seq " ++ dataToString pr1 ++ " " ++ dataToString pr2
+dataToString (If conds pr1 pr2) = "If " ++ (unwords conds) ++ dataToString pr1 ++ dataToString pr2  ++ " "
+dataToString (Table str keys acts) = "Table " ++ str ++ " " ++ (unwords keys) ++ " " ++ (unwords (map (\x -> dataToString x) acts))
+dataToString (ActCons str pr) = "Action " ++ str ++ " " ++ dataToString pr
+dataToString (ActAssignment strs) = "Assignment " ++ (unwords strs)
+dataToString (Drop) = "Drop "
+dataToString (SetHeaderValidity (str, v)) = "SetHeader " ++ str ++ " " ++ (validityToString v)
+dataToString (SetFieldValidity str v) = "SetField " ++ str ++ " " ++ (validityToString v)
+
+validityToString :: Validity -> String
+validityToString Valid = "Valid"
+validityToString Invalid = "Invalid"
+validityToString Undefined = "Undefined"
