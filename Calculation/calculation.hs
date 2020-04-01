@@ -6,17 +6,18 @@ import Parser
 import Preparation
 import Data.Word
 import Foreign.C.Types
+import Foreign.C.String
+import Control.Monad.IO.Class
 
-fibs :: [Word32]
-fibs = 1 : 1 : zipWith (+) fibs (tail fibs)
+helpCalculate :: String -> String
+helpCalculate str =
+    programToString (snd (mainConversion (parseString str) ((initEnv, finalEnv), (initActions, initTables, initProg))))
 
-fibonacci :: Word8 -> Word32
-fibonacci n =
-  if n > 47
-    then 0
-    else fibs !! (fromIntegral n)
+cCalculate :: CString -> IO CString
+cCalculate cStr = do
+    str <- peekCString cStr
+    let result = helpCalculate str
+    cResult <- newCString result
+    return cResult
 
-c_fibonacci :: CUChar -> CUInt
-c_fibonacci (CUChar n) = CUInt (fibonacci n)
-
-foreign export ccall c_fibonacci :: CUChar -> CUInt
+foreign export ccall cCalculate :: CString -> IO CString

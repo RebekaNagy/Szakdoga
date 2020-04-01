@@ -11,6 +11,9 @@ namespace P4Verification.Model
         public string OutputString { get; set; }
 
         public Fibonacci fi { get; set; }
+        public HaskellCalculation hscalculation { get; set; }
+
+        public HaskellString hsstring { get; set; }
 
         public event EventHandler<CalculationEventArgs> CalculationDone;
         public VerificationModel() 
@@ -18,14 +21,17 @@ namespace P4Verification.Model
             OutputString = "A végeredmény itt fog megjelenni.";
             InputString = "Kód bemásolása.";
             fi = new Fibonacci();
+            hscalculation = new HaskellCalculation();
+            hsstring = new HaskellString();
         }
 
         public void Calculate(string input)
         {
             InputString = input;
-            OutputString = InputString;
-            var number = fi.fibonacci(8);
-            OnCalculationDone(OutputString + number.ToString());
+            OutputString = hsstring.CopyString(InputString);
+//            OutputString = hscalculation.HsCalculate(InputString);
+//            var number = fi.fibonacci(8);
+            OnCalculationDone(OutputString);
         }
 
         private void OnCalculationDone(string n)

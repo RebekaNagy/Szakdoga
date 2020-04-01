@@ -10,13 +10,13 @@ namespace P4Verification.Model
     {
         #region DLL imports
 
-        [DllImport(".\\HSdll.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("..\\..\\..\\Fibonacci.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern unsafe void hs_init(IntPtr argc, IntPtr argv);
 
-        [DllImport(".\\HSdll.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("..\\..\\..\\Fibonacci.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern unsafe void hs_exit();
 
-        [DllImport(".\\HSdll.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("..\\..\\..\\Fibonacci.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern UInt32 c_fibonacci(byte i);
 
         #endregion

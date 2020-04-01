@@ -4,7 +4,6 @@ D:\stuff\Szakdoga\Interface\P4Verification\bin\Debug\netcoreapp3.0\P4Verificatio
 D:\stuff\Szakdoga\Interface\P4Verification\bin\Debug\netcoreapp3.0\P4Verification.runtimeconfig.dev.json
 D:\stuff\Szakdoga\Interface\P4Verification\bin\Debug\netcoreapp3.0\P4Verification.dll
 D:\stuff\Szakdoga\Interface\P4Verification\bin\Debug\netcoreapp3.0\P4Verification.pdb
-D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\netcoreapp3.0\P4Verification.csprojAssemblyReference.cache
 D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\netcoreapp3.0\View\MainWindow.g.cs
 D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\netcoreapp3.0\App.g.cs
 D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\netcoreapp3.0\P4Verification_MarkupCompile.cache
@@ -15,3 +14,4 @@ D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\netcoreapp3.0\P4Verificatio
 D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\netcoreapp3.0\P4Verification.AssemblyInfo.cs
 D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\netcoreapp3.0\P4Verification.dll
 D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\netcoreapp3.0\P4Verification.pdb
+D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\netcoreapp3.0\P4Verification.csprojAssemblyReference.cache

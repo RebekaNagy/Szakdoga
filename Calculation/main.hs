@@ -7,9 +7,11 @@ import System.Environment
 
 main :: IO String 
 main = do
-    contents <- getArgs
-    let result = parseString (head contents)
+--    contents <- getArgs
+    contents <- readFile "file.p4"
+    let result = parseString (contents)
     print result
+    putStrLn ""
     let out = mainConversion result ((initEnv, finalEnv), (initActions, initTables, initProg))
     let first = fst out
     let second = snd out
@@ -22,6 +24,9 @@ main = do
     putStrLn ""
     putStrLn "Program:"
     print second
+    putStrLn ""
     putStrLn "Program as string:"
     putStr strprog
     return strprog
+
+--ghc --make -shared calculation.hs
