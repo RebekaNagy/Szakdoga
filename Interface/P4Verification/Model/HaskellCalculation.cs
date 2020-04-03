@@ -16,8 +16,8 @@ namespace P4Verification.Model
         [DllImport("..\\..\\..\\Calculation.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern unsafe void hs_exit();
 
-        [DllImport("..\\..\\..\\Calculation.dll", CallingConvention = CallingConvention.Cdecl)]
-        private static extern unsafe string cCalculate(string i);
+        [DllImport("..\\..\\..\\Calculation.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        private static extern unsafe char* cCalculate([MarshalAs(UnmanagedType.LPWStr)]string i);
 
         #endregion
 
@@ -37,7 +37,7 @@ namespace P4Verification.Model
         {
             unsafe
             {
-                var result = cCalculate(i);
+                String result = new String(cCalculate(i));
                 return result;
             }
         }

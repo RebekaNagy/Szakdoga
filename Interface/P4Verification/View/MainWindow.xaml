@@ -5,9 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:P4Verification"
         mc:Ignorable="d"
-        Title="MainWindow" Height="500" Width="900">
-    <Grid>
+        Title="MainWindow" Height="500" Width="1200">
+    <Grid x:Name="mgrid">
         <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
             <ColumnDefinition/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
@@ -30,20 +31,20 @@
                  AcceptsReturn="True" 
                  AcceptsTab="True"
                  Background="#FFD4D4D4" />
-        <Label Grid.Column="1" 
+        <Label Grid.Column="2" 
                Margin="13,10,0,0" 
                HorizontalAlignment="Left" 
                Width="108" Height="25" 
                VerticalAlignment="Top" 
                Content="Eredmény"/>
         <Button Command="{Binding CalculateCommand}" 
-                Grid.Column="1"
+                Grid.Column="2"
                 Width="140" Height="30" 
                 Margin="85,5,0,0" 
                 VerticalAlignment="Top" 
                 HorizontalAlignment="Left" 
                 Content="Verifikáció"></Button>
-        <ScrollViewer Grid.Column="1"
+        <ScrollViewer Grid.Column="2"
                       Margin="35,40,0,10">
             <TextBlock Text="{Binding Output}" 
                        Grid.Column="1" 
@@ -51,7 +52,27 @@
                        ScrollViewer.HorizontalScrollBarVisibility="Visible" 
                        ScrollViewer.VerticalScrollBarVisibility="Visible" 
                        ScrollViewer.CanContentScroll="True"
-                       HorizontalAlignment="Left" />
+                       HorizontalAlignment="Left" 
+                       TextWrapping="Wrap" />
         </ScrollViewer>
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="100*"/>
+                <RowDefinition Height="30*"/>
+                <RowDefinition Height="100*"/>
+            </Grid.RowDefinitions>
+            <RibbonRadioButton Grid.Row="0">
+                
+            </RibbonRadioButton>
+            <TextBlock Grid.Row="1">
+                
+            </TextBlock>
+            <DataGrid Name="ruleGrid" 
+                      Grid.Row="2">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Rules"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
     </Grid>
 </Window>
