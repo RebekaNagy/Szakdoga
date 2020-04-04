@@ -5,19 +5,19 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:P4Verification"
         mc:Ignorable="d"
-        Title="MainWindow" Height="500" Width="1200">
+        Title="MainWindow" Height="510" Width="1200">
     <Grid x:Name="mgrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
             <ColumnDefinition/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <Label Margin="10,9,285,0" 
+        <Label Margin="10,9,250,0" 
                Content="Input betöltése fájlból:" 
                Height="26" 
                VerticalAlignment="Top"/>
         <Button Command="{Binding ReadInputCommand}" 
-                Margin="0,5,0,0" 
+                Margin="50,5,0,0" 
                 HorizontalAlignment="Center" 
                 Width="140" Height="30" 
                 VerticalAlignment="Top" 
@@ -57,22 +57,64 @@
         </ScrollViewer>
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="100*"/>
-                <RowDefinition Height="30*"/>
+                <RowDefinition Height="60*"/>
+                <RowDefinition Height="50*"/>
                 <RowDefinition Height="100*"/>
             </Grid.RowDefinitions>
-            <RibbonRadioButton Grid.Row="0">
-                
-            </RibbonRadioButton>
-            <TextBlock Grid.Row="1">
-                
-            </TextBlock>
-            <DataGrid Name="ruleGrid" 
-                      Grid.Row="2">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Rules"/>
-                </DataGrid.Columns>
-            </DataGrid>
+
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Column="0">
+                    <Label Content="Bal oldal:" Margin="0,20,0,0"/>
+                    <ComboBox Name="firstcombo" Margin="0,0,0,0"
+                              ItemsSource="{Binding Rules}" 
+                              SelectedItem="{Binding SelectedFirst}"
+                              DisplayMemberPath="Name"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1">
+                    <Label Content="Jobb oldal:" Margin="0,20,0,0"/>
+                    <ComboBox Name="secondcombo" Margin="0,0,0,0"
+                              ItemsSource="{Binding SelectedFirst.RuleActions}"
+                              SelectedItem="{Binding SelectedSecond}"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <Label Content="Feltetelek:" Margin="0,20,0,0"/>
+                    <ComboBox Name="thirdcombo" Margin="0,0,0,0"
+                              ItemsSource="{Binding SelectedFirst.SideConditions}"
+                              SelectedItem="{Binding SelectedThird}"/>
+                </StackPanel>
+                <Button Grid.Column="2" Grid.Row="2" Margin="0,20,10,25"
+                        Content="Szabály generálása"
+                        Command="{Binding GenerateRuleCommand}"/>
+            </Grid>            
+            <TextBlock Name="NewRule"
+                       Grid.Row="1" 
+                       Background="#FFD4D4D4" 
+                       Margin="10,10,10,60"
+                       Text="{Binding NewStringRule}"/>
+            <Button Name="AddRuleButton"
+                    Grid.Row="1" 
+                    Margin="200,80,30,10"
+                    Content="Szabály hozzáadása"
+                    Command="{Binding AddRuleCommand}"/>
+            <ListView Name="ruleList"
+                      ItemsSource="{Binding StringRules}"
+                      SelectedItem="{Binding SelectedStringRule}"
+                      Grid.Row="2" Margin="0,0,0,40">
+            </ListView>
+            <Button Name="DeleteRule"
+                    Grid.Row="2" 
+                    Margin="200,200,30,5"
+                    Content="Szabály törlése"
+                    Command="{Binding DeleteRuleCommand}"/>
         </Grid>
     </Grid>
 </Window>
