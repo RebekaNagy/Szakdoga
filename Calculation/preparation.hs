@@ -7,13 +7,18 @@ import Verification
 ------------------------------------- MAIN CONVERSION FUNCTIONS
 
 mainConversion :: [Statement] -> ((Environment, Environment), ([Program], [Program], [Program]))-> ((Environment, Environment), [Program])
-mainConversion []  ((init, final), (actions, tables, prog)) = ((init, final), prog)
+mainConversion [] ((init, final), (actions, tables, prog)) =
+    case filteredProgram of
+        [] -> ((init, final), [EmptyProg])
+        _ -> ((init, final), filteredProgram)
+    where filteredProgram = (filter (\x -> x /= Skip) prog)
 mainConversion (x:xs) ((init, final), (actions, tables, prog)) =
     case x of 
         ParserHeader name fields -> mainConversion xs ((headerConversion x (init, final)), (actions, tables, prog))
         ParserStruct sname sfields -> mainConversion xs ((headerConversion x (init, final)), (actions, tables, prog))
         Parser block -> mainConversion xs (((parserConversion x init), final), (actions, tables, prog))
         Control cname cblock -> mainConversion xs (controlConversion cblock ((init, final), (actions, tables, prog)))
+        Error -> ((init, final), [ProgError])
         _ -> mainConversion xs ((init, final), (actions, tables, prog))
 
 ------------------------------------- HEADER CONVERSION FUNCTIONS
@@ -118,7 +123,7 @@ applyConversion :: [Statement] -> [Program] -> [Program] -> Program
 applyConversion [] actions tables = Skip
 applyConversion (x:xs) actions tables =
     case x of
-        ParserSkip -> Seq Skip (applyConversion xs actions tables)
+        ParserSkip -> (applyConversion xs actions tables)
         ParserIf (BoolExpr bexpr) (ParserSeq block) elseBlock ->
             case elseBlock of
                 ParserSkip -> (Seq (If (condConversion bexpr) (applyConversion block actions tables) Skip) (applyConversion xs actions tables))
@@ -127,7 +132,7 @@ applyConversion (x:xs) actions tables =
         FuncExpr fexpr ->
             case fexpr of
                 (ApplyFunc (FuncVar name)) -> (Seq (applyFuncConversion name tables) (applyConversion xs actions tables))
-                (Emit (FuncVar name1) (FuncVar name2)) -> (Seq (Skip) (applyConversion xs actions tables))
+                (Emit (FuncVar name1) (FuncVar name2)) -> (applyConversion xs actions tables)
                 (ActionVar name) -> (Seq (actionCallConversion name actions) (applyConversion xs actions tables))
                 _ -> Seq (functionConversion fexpr) (applyConversion xs actions tables)
         ParserAssignment variable aexpr -> (Seq (ActAssignment (variable : (assignmentConversion aexpr))) (applyConversion xs actions tables))
@@ -195,7 +200,8 @@ programToString [] = "\n"
 programToString (x:xs) = dataToString x ++ programToString xs
 
 dataToString :: Program -> String
-dataToString (PrError) = "Error. "
+dataToString (EmptyProg) = "A program nem tartalmaz verifikálásra alkalmas részt."
+dataToString (ProgError) = "A program szintaktikailag helytelen, vagy a vizsgált résznyelven kívül esik."
 dataToString (Skip) = "Skip "
 dataToString (Seq pr1 pr2) = "Seq " ++ dataToString pr1 ++ " " ++ dataToString pr2
 dataToString (If conds pr1 pr2) = "If " ++ (unwords conds) ++ dataToString pr1 ++ dataToString pr2  ++ " "

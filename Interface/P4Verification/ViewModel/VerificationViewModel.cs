@@ -15,7 +15,8 @@ namespace P4Verification.ViewModel
         private string _selectedSecond;
         private string _selectedThird;
         private string _newStringRule;
-
+        private string _errorMessage;
+        private bool _ruleMakerVisibility;
         public Rule SelectedFirst
         {
             get { return _selectedFirst; }
@@ -92,6 +93,32 @@ namespace P4Verification.ViewModel
             }
         }
 
+        public string ErrorMessage
+        {
+            get { return _errorMessage; }
+            set
+            {
+                if (_errorMessage != value)
+                {
+                    _errorMessage = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public bool RuleMakerVisibility
+        {
+            get { return _ruleMakerVisibility; }
+            set
+            {
+                if (_ruleMakerVisibility != value)
+                {
+                    _ruleMakerVisibility = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public string Output
         {
             get; set;
@@ -107,7 +134,6 @@ namespace P4Verification.ViewModel
         public DelegateCommand ReadInputCommand { get; set; }
         public DelegateCommand GenerateRuleCommand { get; set; }
         public DelegateCommand AddRuleCommand { get; set; }
-
         public DelegateCommand DeleteRuleCommand { get; set; }
         public VerificationViewModel(VerificationModel model)
         {
@@ -122,6 +148,7 @@ namespace P4Verification.ViewModel
             });
 
             StringRules = new ObservableCollection<string>();
+            RuleMakerVisibility = false;
 
             model.CalculationDone += new EventHandler<CalculationEventArgs>(Model_CalculationDone);
 
@@ -144,34 +171,68 @@ namespace P4Verification.ViewModel
 
         private void GenerateRule()
         {
-            string tempRule = "";
-            switch (SelectedFirst.Name)
+            if(SelectedFirst == null || SelectedSecond == null || SelectedThird == null)
             {
-                case "Sequence":
-                    tempRule = tempRule + "seq ";
-                    break;
-                case "Selection":
-                    tempRule = tempRule + "select ";
-                    break;
-                case "Table":
-                    tempRule = tempRule + "table ";
-                    break;
-                case "Assignment":
-                    tempRule = tempRule + "assignt ";
-                    break;
+                ErrorMessage = "Új szabály generálásához mind a három opció kiválasztására szükség van.";
             }
-            tempRule = tempRule + "=>" + SelectedSecond + ", " + SelectedThird;
-            NewStringRule = tempRule;
+            else
+            {
+                ErrorMessage = "";
+                string tempRule = "";
+                switch (SelectedFirst.Name)
+                {
+                    case "Sequence":
+                        tempRule = tempRule + "seq ";
+                        break;
+                    case "Selection":
+                        tempRule = tempRule + "select ";
+                        break;
+                    case "Table":
+                        tempRule = tempRule + "table ";
+                        break;
+                    case "Assignment":
+                        tempRule = tempRule + "assign ";
+                        break;
+                }
+                tempRule = tempRule + "=>" + SelectedSecond + ", " + SelectedThird;
+                NewStringRule = tempRule;
+            }
         }
 
         private void AddRule()
         {
-            StringRules.Add(NewStringRule);
-            NewStringRule = "";
+            if(NewStringRule == null || NewStringRule == "")
+            {
+                ErrorMessage = "Új hozzáadásához előbb a szabály generálására van szükség.";
+            }
+            else
+            {
+                ErrorMessage = "";
+                StringRules.Add(NewStringRule);
+                NewStringRule = "";
+
+                Rules.Remove(SelectedFirst);
+            }
         }
 
         private void DeleteRule()
         {
+            if(SelectedStringRule.Contains("seq"))
+            {
+                Rules.Add(new SequenceRule("Sequence"));
+            }
+            else if(SelectedStringRule.Contains("select"))
+            {
+                Rules.Add(new SelectionRule("Selection"));
+            }
+            else if (SelectedStringRule.Contains("table"))
+            {
+                Rules.Add(new TableRule("Table"));
+            }
+            else if (SelectedStringRule.Contains("assign"))
+            {
+                Rules.Add(new AssignmentRule("Assignment"));
+            }
             StringRules.Remove(SelectedStringRule);
         }
     }

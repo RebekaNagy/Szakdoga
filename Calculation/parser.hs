@@ -527,8 +527,10 @@ boolTerm = parens buildBoolExpr
 
 parseString :: String -> [Statement]
 parseString str = case parse p4Parser "" str of
-    Left e  -> error $ show e
+    Left e  -> [Error]
     Right r -> r
+
+--error $ show e
 
 parseFile :: String -> IO [Statement]
 parseFile file = do 

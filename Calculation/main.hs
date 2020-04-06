@@ -8,7 +8,7 @@ import System.Environment
 main :: IO String 
 main = do
 --    contents <- getArgs
-    contents <- readFile "file.p4"
+    contents <- readFile "file.txt"
     let result = parseString (contents)
     print result
     putStrLn ""

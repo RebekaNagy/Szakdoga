@@ -57,64 +57,75 @@
         </ScrollViewer>
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="60*"/>
-                <RowDefinition Height="50*"/>
-                <RowDefinition Height="100*"/>
+                <RowDefinition Height="10*"/>
+                <RowDefinition Height="9*"/>
             </Grid.RowDefinitions>
-
-            <Grid Grid.Row="0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
-                <StackPanel Grid.Column="0">
-                    <Label Content="Bal oldal:" Margin="0,20,0,0"/>
-                    <ComboBox Name="firstcombo" Margin="0,0,0,0"
+            <StackPanel Grid.Row="0">
+                <Grid Height="90">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <Label Content="Bal oldal:" Margin="0,20,0,0"/>
+                        <ComboBox Name="firstcombo" Margin="0,0,0,0"
                               ItemsSource="{Binding Rules}" 
                               SelectedItem="{Binding SelectedFirst}"
                               DisplayMemberPath="Name"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1">
-                    <Label Content="Jobb oldal:" Margin="0,20,0,0"/>
-                    <ComboBox Name="secondcombo" Margin="0,0,0,0"
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <Label Content="Jobb oldal:" Margin="0,20,0,0"/>
+                        <ComboBox Name="secondcombo" Margin="0,0,0,0"
                               ItemsSource="{Binding SelectedFirst.RuleActions}"
                               SelectedItem="{Binding SelectedSecond}"/>
-                </StackPanel>
-                <StackPanel Grid.Column="2">
-                    <Label Content="Feltetelek:" Margin="0,20,0,0"/>
-                    <ComboBox Name="thirdcombo" Margin="0,0,0,0"
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <Label Content="Feltetelek:" Margin="0,20,0,0"/>
+                        <ComboBox Name="thirdcombo" Margin="0,0,0,0"
                               ItemsSource="{Binding SelectedFirst.SideConditions}"
                               SelectedItem="{Binding SelectedThird}"/>
-                </StackPanel>
-                <Button Grid.Column="2" Grid.Row="2" Margin="0,20,10,25"
-                        Content="Szabály generálása"
-                        Command="{Binding GenerateRuleCommand}"/>
-            </Grid>            
-            <TextBlock Name="NewRule"
-                       Grid.Row="1" 
-                       Background="#FFD4D4D4" 
-                       Margin="10,10,10,60"
-                       Text="{Binding NewStringRule}"/>
-            <Button Name="AddRuleButton"
-                    Grid.Row="1" 
-                    Margin="200,80,30,10"
+                    </StackPanel>
+                </Grid>
+                <Button 
+                    Content="Szabály generálása"
+                    Width="150"
+                    Height="25"
+                    HorizontalAlignment="Right"
+                    Command="{Binding GenerateRuleCommand}" />
+                <TextBlock
+                    TextWrapping="Wrap" 
+                    Foreground="Red"
+                    Text="{Binding ErrorMessage}" 
+                    Width="200" Height="50"
+                    VerticalAlignment="Top"
+                    HorizontalAlignment="Left"/>                
+                <TextBlock
+                    x:Name="NewRule"
+                    Background="#FFD4D4D4"
+                    Text="{Binding NewStringRule}"
+                    Height="30"
+                    Width="350" Margin="0,11,0,0"/>
+                <Button
+                    Name="AddRuleButton"
                     Content="Szabály hozzáadása"
-                    Command="{Binding AddRuleCommand}"/>
+                    Command="{Binding AddRuleCommand}"
+                    Height="25"
+                    Width="150"
+                    HorizontalAlignment="Right" Margin="0,10,0,0"/>
+            </StackPanel>
             <ListView Name="ruleList"
                       ItemsSource="{Binding StringRules}"
-                      SelectedItem="{Binding SelectedStringRule}"
-                      Grid.Row="2" Margin="0,0,0,40">
-            </ListView>
+                      SelectedItem="{Binding SelectedStringRule}" 
+                      Grid.Row="1" Margin="10,30,0,50"/>
             <Button Name="DeleteRule"
-                    Grid.Row="2" 
-                    Margin="200,200,30,5"
                     Content="Szabály törlése"
-                    Command="{Binding DeleteRuleCommand}"/>
+                    Command="{Binding DeleteRuleCommand}" Grid.Row="1" 
+                    Margin="0,0,0,10" 
+                    Height="30" 
+                    VerticalAlignment="Bottom" 
+                    HorizontalAlignment="Right" 
+                    Width="200"/>
         </Grid>
     </Grid>
 </Window>

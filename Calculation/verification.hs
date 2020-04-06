@@ -12,7 +12,8 @@ type Header = (String, (Validity, [Field]))
 data Environment = Env [Header] | EnvError deriving (Show, Eq)
 
 data Program =
-    PrError
+    EmptyProg
+    | ProgError
     | Skip
     | Seq Program Program
     | If [String] Program Program
@@ -58,7 +59,7 @@ prFunc_Table (Env l) = (Env l)
 ------------------------------------- CALCULATING FUNCTIONS
 
 fittingRule :: Program -> [Rule] -> Rule
-fittingRule pr [] = (\(Env l) PrError sidecons -> prFunc_Skip (Env l))
+fittingRule pr [] = (\(Env l) ProgError sidecons -> prFunc_Skip (Env l))
 fittingRule pr (x:xs) 
     | x exampleEnv pr empSideCons == EnvError = fittingRule pr xs
     | otherwise = x
