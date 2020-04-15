@@ -6,72 +6,106 @@ import Verification
 
 ------------------------------------- MAIN CONVERSION FUNCTIONS
 
-mainConversion :: [Statement] -> ((Environment, Environment), ([Program], [Program], [Program]))-> ((Environment, Environment), [Program])
+mainConversion :: [Statement] -> (([Environment], Environment), ([Program], [Program], [Program]))-> (([Environment], Environment), [Program])
 mainConversion [] ((init, final), (actions, tables, prog)) =
     case filteredProgram of
         [] -> ((init, final), [EmptyProg])
         _ -> ((init, final), filteredProgram)
     where filteredProgram = (filter (\x -> x /= Skip) prog)
 mainConversion (x:xs) ((init, final), (actions, tables, prog)) =
-    case x of 
-        ParserHeader name fields -> mainConversion xs ((headerConversion x (init, final)), (actions, tables, prog))
-        ParserStruct sname sfields -> mainConversion xs ((headerConversion x (init, final)), (actions, tables, prog))
-        Parser block -> mainConversion xs (((parserConversion x init), final), (actions, tables, prog))
-        Control cname cblock -> mainConversion xs (controlConversion cblock ((init, final), (actions, tables, prog)))
-        Error -> ((init, final), [ProgError])
-        _ -> mainConversion xs ((init, final), (actions, tables, prog))
+    case prog of
+        [ProgError] -> ((init, final), [ProgError])
+        _ -> case x of 
+            ParserHeader name fields -> mainConversion xs ((headerConversion x (init, final)), (actions, tables, prog))
+            ParserStruct sname sfields -> mainConversion xs ((headerConversion x (init, final)), (actions, tables, prog))
+            Parser block -> mainConversion xs (((parserConversion x init), final), (actions, tables, prog))
+            Control cname cblock -> mainConversion xs (controlConversion cblock ((init, final), (actions, tables, prog)))
+            Error -> ((init, final), [ProgError])
+            _ -> mainConversion xs ((init, final), (actions, tables, prog))
 
 ------------------------------------- HEADER CONVERSION FUNCTIONS
 
-headerConversion :: Statement -> (Environment, Environment) -> (Environment, Environment)
-headerConversion (ParserStruct name []) (Env init, Env final) = (Env init, Env final)
-headerConversion (ParserHeader name []) (Env init, Env final) = (Env init, Env final)
-headerConversion (ParserHeader name fields) (Env init, Env final) = (Env (init ++ [newHeader]), Env (final ++ [newHeader]))
-    where newHeader = (name, (Invalid, fieldsConversion fields))
-headerConversion (ParserStruct name ((StructField (structType, sname)):xs)) (Env init, Env final) 
-    | isItHeader structType (Env init) = rewriteHeader ((StructField (structType, sname)):xs) (Env init, Env final)
-    | otherwise = (Env (init ++ [newHeader]), Env (final ++ [newHeader]))
-    where newHeader = (name, (Invalid, fieldsConversion ((StructField (structType, sname)):xs)))
+headerConversion :: Statement -> ([Environment], Environment) -> ([Environment], Environment)
+headerConversion (ParserStruct name []) (init, Env final) = (init, Env final)
+headerConversion (ParserHeader name []) (init, Env final) = (init, Env final)
+headerConversion (ParserHeader name fields) (((Env init):i), Env final) = (((Env (init ++ [newInit])):i), Env (final ++ [newFinal]))
+    where { newInit  = (name, (Invalid, fieldsConversion Invalid fields));
+            newFinal = (name, (Undefined, fieldsConversion Undefined fields)) }
+headerConversion (ParserStruct name ((StructField (structType, sname)):xs)) (((Env init):i), Env final) 
+    | isItHeader structType (Env final) = rewriteHeader ((StructField (structType, sname)):xs) (((Env init):i), Env final)
+    | otherwise = (((Env (init ++ [newInit])):i), Env (final ++ [newFinal]))
+    where { newInit = (name, (Invalid, fieldsConversion Invalid ((StructField (structType, sname)):xs)));
+            newFinal = (name, (Undefined, fieldsConversion Undefined ((StructField (structType, sname)):xs))) }
 
-fieldsConversion :: [Variable] -> [Field]
-fieldsConversion [] = []
-fieldsConversion ((ParserField (ptype, name)):xs) = (name, Valid) : fieldsConversion xs
-fieldsConversion ((StructField (stype, name)):xs) = (name, Valid) : fieldsConversion xs
+fieldsConversion :: Validity -> [Variable] -> [Field]
+fieldsConversion validity [] = []
+fieldsConversion validity ((ParserField (ptype, name)):xs) = (name, validity) : fieldsConversion validity xs
+fieldsConversion validity ((StructField (ptype, name)):xs) = (name, validity) : fieldsConversion validity xs
 
 isItHeader :: String -> Environment -> Bool
 isItHeader id (Env l) = or (map (\x@(id', (v', f)) -> if id == id' then True else False) l)
 
-rewriteHeader :: [Variable] -> (Environment, Environment) -> (Environment, Environment)
-rewriteHeader [] (Env init, Env final) = (Env init, Env final)
-rewriteHeader ((StructField (stype, sname)):xs) (Env init, Env final) = rewriteHeader xs (Env newEnv, Env newEnv)
-    where newEnv = (map (\x@(hname, (v, f)) -> if stype == hname then (sname, (v, (rewriteFields sname f))) else x) init)
-
+rewriteHeader :: [Variable] -> ([Environment], Environment) -> ([Environment], Environment)
+rewriteHeader [] (init, Env final) = (init, Env final)
+rewriteHeader ((StructField (stype, sname)):xs) (((Env init):i), Env final) = rewriteHeader xs (((Env newInit):i), Env newFinal)
+    where { newInit = (map (\x@(hname, (v, f)) -> if stype == hname then (sname, (v, (rewriteFields sname f))) else x) init);
+            newFinal = (map (\x@(hname, (v, f)) -> if stype == hname then (sname, (v, (rewriteFields sname f))) else x) final) }
+    
 rewriteFields :: String -> [Field] -> [Field]
 rewriteFields headerName fields = map (\(name, v) -> ((headerName ++ "." ++ name), v)) fields
 
 ------------------------------------- PARSER CONVERSION FUNCTIONS
-parserConversion :: Statement -> Environment -> Environment
+parserConversion :: Statement -> [Environment] -> [Environment]
 parserConversion (Parser []) init = init
 parserConversion (Parser (x:xs)) init =
-    case x of 
-        State name block -> parserConversion (Parser xs) (stateConversion block init)
-        _ -> parserConversion (Parser xs) init
+    case validParser of
+        [] -> case containsStartState (Parser (x:xs)) of 
+                ((State "start" block), True) -> stateConversion block init
+                (EmptyStatement, False) -> [EnvError]
+        _ -> [EnvError]
+        where validParser = (filter (\element -> case element of
+                                                    Error -> True
+                                                    _ -> False) (x:xs))
 
-stateConversion :: Statement -> Environment -> Environment
+containsStartState :: Statement -> (Statement, Bool)
+containsStartState (Parser block) =
+    case contains of
+        [] -> (EmptyStatement, False)
+        _ -> (head contains, True)
+    where contains = (filter (\element -> case element of
+                                            State "start" stateBlock -> True
+                                            _ -> False) block)
+
+
+--stateeConversion :: Statement -> Statement -> [Environment] -> [Environment]
+--stateeConversion (ParserSeq []) (Parser block) init = init
+--stateeConversion (ParserSeq (x:xs)) (Parser block) init =
+--    case x of 
+--        FuncExpr (Extract (FuncVar pack) (FuncVar header)) -> 
+--            stateeConversion (ParserSeq xs) ((prFunc_SetHeaderValidity (prFunc_SetEveryFieldValidity (Env init) headername Valid) headername Valid):i)
+--            where headername = (drop 1 (dropWhile (/= '.') header))
+--        _ -> stateeConversion (ParserSeq xs) ((Env init):i)
+
+stateConversion :: Statement -> [Environment] -> [Environment]
 stateConversion (ParserSeq []) init = init 
-stateConversion (ParserSeq (x:xs)) init =
+stateConversion (ParserSeq (x:xs)) ((Env init):i) =
     case x of 
+        Error -> [EnvError]
         FuncExpr (Extract (FuncVar pack) (FuncVar header)) -> 
-            stateConversion (ParserSeq xs) (prFunc_SetHeaderValidity init (drop 1 (dropWhile (/= '.') header)) Valid)
-        _ -> stateConversion (ParserSeq xs) init
+            stateConversion (ParserSeq xs) ((prFunc_SetHeaderValidity (prFunc_SetEveryFieldValidity (Env init) headername Valid) headername Valid):i)
+            where headername = (drop 1 (dropWhile (/= '.') header))
+        _ -> stateConversion (ParserSeq xs) ((Env init):i)
 
 ------------------------------------- CONTROL CONVERSION FUNCTION
-controlConversion :: [Statement] -> ((Environment, Environment), ([Program], [Program], [Program])) -> ((Environment, Environment), ([Program], [Program], [Program]))
+controlConversion :: [Statement] -> (([Environment], Environment), ([Program], [Program], [Program])) -> (([Environment], Environment), ([Program], [Program], [Program]))
 controlConversion [] ((init, final),(actions, tables, prog)) = ((init, final),(actions, tables, prog))
 controlConversion (x:xs) ((init, final),(actions, tables, prog)) =
-    case x of 
-        ParserAction actionName (ParserSeq acts) -> 
-            controlConversion xs ((init, final), ((actions ++ [ActCons actionName (actionConversion acts)]), tables, prog))
+    case x of
+        Error -> ((init, final),(actions, tables, [ProgError]))
+        ParserAction actionName (ParserSeq acts) -> case validActions of
+            ProgError -> ((init, final),(actions, tables, [ProgError]))
+            _ -> controlConversion xs ((init, final), ((actions ++ [ActCons actionName validActions]), tables, prog))
+            where validActions = (actionConversion acts)
         ParserTable tableName (Keys k) (Acts act) -> controlConversion xs ((init, final), (tableConversion x (actions, tables, prog)))
         Apply (ParserSeq block) -> controlConversion xs ((init, (emitConversion block final)), (actions, tables, (prog ++ [applyConversion block actions tables])))
         _ -> controlConversion xs ((init, final), (actions, tables, prog))
@@ -81,13 +115,17 @@ actionConversion :: [Statement] -> Program
 actionConversion [] = Skip
 actionConversion (x:xs) = 
     case x of
+        Error -> ProgError
         ParserDrop -> Seq Drop (actionConversion xs)
-        ParserAssignment variable expression ->  Seq (ActAssignment (variable : (assignmentConversion expression))) (actionConversion xs)
-        FuncExpr funcexpression -> Seq (functionConversion funcexpression) (actionConversion xs)
+        ParserAssignment variable expression ->  Seq (ActAssignment (drop 1 (dropWhile (/= '.') variable)) (assignmentConversion expression)) (actionConversion xs)
+        FuncExpr funcexpression -> case validExpr of
+                ProgError -> ProgError
+                _ -> Seq validExpr (actionConversion xs)
+                where validExpr = functionConversion funcexpression
         _ -> actionConversion xs
 
 assignmentConversion :: ArithmeticExpression -> [String]
-assignmentConversion (ArithVar name) = [name]
+assignmentConversion (ArithVar name) = [(drop 1 (dropWhile (/= '.') name))]
 assignmentConversion (NumConstant number) = []
 assignmentConversion (Negated arith) = assignmentConversion arith
 assignmentConversion (Add arith1 arith2) = (assignmentConversion arith1) ++ (assignmentConversion arith2)
@@ -96,6 +134,7 @@ assignmentConversion (Multiply arith1 arith2) = (assignmentConversion arith1) ++
 assignmentConversion (Divide arith1 arith2) = (assignmentConversion arith1) ++ (assignmentConversion arith2)
 
 functionConversion :: FunctionExpression -> Program
+functionConversion (FuncVar name) = ProgError
 functionConversion (Count (FuncVar name)) = SetHeaderValidity (name, Valid)
 functionConversion (SetValid (FuncVar name)) = SetHeaderValidity (name, Valid)
 functionConversion (SetInvalid (FuncVar name)) = SetHeaderValidity (name, Invalid)
@@ -110,8 +149,8 @@ keyConversion [] = []
 keyConversion (x:xs) =
     case x of 
         Var "none" -> keyConversion xs
-        Var str -> str : keyConversion xs
-        Semi str1 str2 -> str1 : keyConversion xs
+        Var str -> (drop 1 (dropWhile (/= '.') str)) : keyConversion xs
+        Semi str1 str2 -> (drop 1 (dropWhile (/= '.') str1)) : keyConversion xs
 
 actsConversion :: [String] -> [Program] -> [Program]
 actsConversion [] actions = []
@@ -135,7 +174,7 @@ applyConversion (x:xs) actions tables =
                 (Emit (FuncVar name1) (FuncVar name2)) -> (applyConversion xs actions tables)
                 (ActionVar name) -> (Seq (actionCallConversion name actions) (applyConversion xs actions tables))
                 _ -> Seq (functionConversion fexpr) (applyConversion xs actions tables)
-        ParserAssignment variable aexpr -> (Seq (ActAssignment (variable : (assignmentConversion aexpr))) (applyConversion xs actions tables))
+        ParserAssignment variable aexpr -> (Seq (ActAssignment (drop 1 (dropWhile (/= '.') variable)) (assignmentConversion aexpr)) (applyConversion xs actions tables))
         _ -> applyConversion xs actions tables
 
 condConversion :: BoolExpression -> [String]
@@ -161,7 +200,8 @@ emitConversion [] final = final
 emitConversion (x:xs) final =
     case x of
         FuncExpr (Emit (FuncVar name1) (FuncVar name2)) -> 
-            emitConversion xs (prFunc_SetHeaderValidity final (drop 1 (dropWhile (/= '.') name2)) Valid)
+            emitConversion xs (prFunc_SetHeaderValidity (prFunc_SetEveryFieldValidity final headername Valid) headername Valid)
+            where headername = (drop 1 (dropWhile (/= '.') name2))
         _ -> emitConversion xs final
 
 actionCallConversion :: String -> [Program] -> Program
@@ -180,8 +220,8 @@ takeUntil s (y:ys)
 
 ------------------------------------- VARIABLES
 
-initEnv :: Environment
-initEnv = Env [("drop",(Invalid, []))]
+initEnv :: [Environment]
+initEnv = [Env [("drop",(Invalid, []))]]
 
 finalEnv :: Environment
 finalEnv = Env [("drop",(Invalid, []))]
@@ -207,7 +247,7 @@ dataToString (Seq pr1 pr2) = "Seq " ++ dataToString pr1 ++ " " ++ dataToString p
 dataToString (If conds pr1 pr2) = "If " ++ (unwords conds) ++ dataToString pr1 ++ dataToString pr2  ++ " "
 dataToString (Table str keys acts) = "Table " ++ str ++ " " ++ (unwords keys) ++ " " ++ (unwords (map (\x -> dataToString x) acts))
 dataToString (ActCons str pr) = "Action " ++ str ++ " " ++ dataToString pr
-dataToString (ActAssignment strs) = "Assignment " ++ (unwords strs)
+dataToString (ActAssignment str strs) = "Assignment " ++ str ++ (unwords strs)
 dataToString (Drop) = "Drop "
 dataToString (SetHeaderValidity (str, v)) = "SetHeader " ++ str ++ " " ++ (validityToString v)
 dataToString (SetFieldValidity str v) = "SetField " ++ str ++ " " ++ (validityToString v)

@@ -36,6 +36,7 @@ data Statement = Error
     | BoolExpr BoolExpression
     | Include String
     | Typedef
+    | EmptyStatement
     deriving Show 
 
 data Variable = ParserField (String, String)
@@ -186,6 +187,7 @@ parserSection = do
 parserComponents :: Parser Statement
 parserComponents = stateParser
     <|> actionExpr
+    <|> tokenEater
 
 stateParser :: Parser Statement
 stateParser = do
@@ -198,6 +200,7 @@ stateParser = do
 stateComponents = transitionSelectParser
     <|> transitionParser 
     <|> actionExpr
+    <|> tokenEater
 
 transitionParser :: Parser Statement
 transitionParser = do
@@ -229,6 +232,7 @@ controlComponents = direct_counterParser
     <|> actionParser
     <|> tableParser
     <|> applyParser
+    <|> tokenEater
 
 direct_counterParser :: Parser Statement
 direct_counterParser = do
@@ -251,6 +255,7 @@ actionComponents :: Parser Statement
 actionComponents = dropParser
     <|> hashParser
     <|> actionExpr
+    <|> tokenEater
 
 dropParser :: Parser Statement
 dropParser = do
@@ -291,7 +296,7 @@ actsParser :: Parser String
 actsParser = do
     atparse <- option ParserSkip atParser
     action <- identifier
-    reserved ";"
+    any <- manyTill tokenEater $ try (reserved ";")
     return action
 
 atParser :: Parser Statement
@@ -312,6 +317,7 @@ applyComponents = ifParser
     <|> verifychecksumParser
     <|> updatechecksumParser
     <|> actionExpr
+    <|> tokenEater
 
 ifParser :: Parser Statement
 ifParser = do 
@@ -443,7 +449,9 @@ actionExpr = do
                     expr <- buildFunctionExpr var
                     reserved ";"
                     return $ FuncExpr expr
-                _ -> return $ FuncExpr (ActionVar var)
+                _ ->do
+                    reserved ";" 
+                    return $ FuncExpr (ActionVar var)
         _ -> do
             expr <- buildArithmeticExpr
             reserved ";"

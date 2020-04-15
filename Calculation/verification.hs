@@ -19,7 +19,7 @@ data Program =
     | If [String] Program Program
     | Table String [String] [Program]
     | ActCons String Program
-    | ActAssignment [String]
+    | ActAssignment String [String]
     | Drop 
     | SetHeaderValidity (String, Validity)
     | SetFieldValidity String Validity deriving (Show, Eq)
@@ -32,7 +32,7 @@ type Rule = Environment -> Program -> SideCondition -> Environment
 ------------------------------------- PROGRAM FUNCTIONS
 
 prFunc_Skip :: Environment -> Environment
-prFunc_Skip (Env x) = (Env x)
+prFunc_Skip env = env
 --pl.: prFunc_Skip initEnv
 
 prFunc_Drop :: Environment -> Environment
@@ -47,14 +47,17 @@ prFunc_SetFieldValidity :: Environment -> String -> Validity-> Environment
 prFunc_SetFieldValidity (Env l) id v = Env (map (\x -> helper_SetFieldValidity x id v) l)
 --pl.: prFunc_SetFieldValidity initEnv "dstAddr" Invalid
 
+prFunc_SetEveryFieldValidity :: Environment -> String -> Validity -> Environment
+prFunc_SetEveryFieldValidity (Env l) header v = Env (map (\x@(hid, (hv, f)) -> if hid == header then (hid, (hv, (map (\(id, v') -> (id, v)) f))) else x) l)
+
 prFunc_If :: Environment -> Environment
-prFunc_If (Env l) = (Env l)
+prFunc_If env = env
 
 prFunc_Seq :: Environment -> Environment
-prFunc_Seq (Env l) = (Env l)
+prFunc_Seq env = env
 
 prFunc_Table :: Environment -> Environment
-prFunc_Table (Env l) = (Env l)
+prFunc_Table env = env
 
 ------------------------------------- CALCULATING FUNCTIONS
 
@@ -83,6 +86,10 @@ getValidity str (Env ((hid, (hv, fields)):xs))
 
 helper_SetFieldValidity :: Header -> String -> Validity -> Header
 helper_SetFieldValidity (hid, (hv, f)) id v = (hid, (hv, (map (\x@(id', v') -> if id' == id then (id, v) else x) f)))
+
+helper_SetEveryFieldValidity :: Header -> Validity -> Header
+helper_SetEveryFieldValidity (hid, (hv, f)) v = (hid, (hv, (map (\(id, v') -> (id, v)) f)))
+
 
 helper_getValidity :: String -> [Field] -> Validity
 helper_getValidity str [] = Undefined

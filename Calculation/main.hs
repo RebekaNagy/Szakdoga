@@ -10,14 +10,14 @@ main = do
 --    contents <- getArgs
     contents <- readFile "file.txt"
     let result = parseString (contents)
-    print result
+    mapM print result
     putStrLn ""
     let out = mainConversion result ((initEnv, finalEnv), (initActions, initTables, initProg))
     let first = fst out
     let second = snd out
     let strprog = programToString second
     putStrLn "Initial:"
-    print (fst first)
+    mapM print (fst first)
     putStrLn ""
     putStrLn "Final:"
     print (snd first)
