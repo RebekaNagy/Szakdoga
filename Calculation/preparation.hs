@@ -15,7 +15,7 @@ mainConversion [] ((init, final), (actions, tables, prog)) =
 mainConversion (x:xs) ((init, final), (actions, tables, prog)) =
     case prog of
         [ProgError] -> ((init, final), [ProgError])
-        _ -> case x of 
+        _ -> case x of
             ParserHeader name fields -> mainConversion xs ((headerConversion x (init, final)), (actions, tables, prog))
             ParserStruct sname sfields -> mainConversion xs ((headerConversion x (init, final)), (actions, tables, prog))
             Parser block -> mainConversion xs (((parserConversion x init), final), (actions, tables, prog))
@@ -57,44 +57,115 @@ rewriteFields headerName fields = map (\(name, v) -> ((headerName ++ "." ++ name
 ------------------------------------- PARSER CONVERSION FUNCTIONS
 parserConversion :: Statement -> [Environment] -> [Environment]
 parserConversion (Parser []) init = init
-parserConversion (Parser (x:xs)) init =
+parserConversion (Parser parserBlock) init =
     case validParser of
-        [] -> case containsStartState (Parser (x:xs)) of 
-                ((State "start" block), True) -> stateConversion block init
-                (EmptyStatement, False) -> [EnvError]
+        [] -> case containsStartState (Parser parserBlock) of 
+                State "start" stateBlock -> stateConversion stateBlock (Parser parserBlock) init
+                EmptyStatement -> [EnvError]
         _ -> [EnvError]
-        where validParser = (filter (\element -> case element of
-                                                    Error -> True
-                                                    _ -> False) (x:xs))
+        where validParser = (filter (\element -> element == Error) parserBlock)
 
-containsStartState :: Statement -> (Statement, Bool)
+containsStartState :: Statement -> Statement
 containsStartState (Parser block) =
     case contains of
-        [] -> (EmptyStatement, False)
-        _ -> (head contains, True)
+        [] -> EmptyStatement
+        _ -> head contains
     where contains = (filter (\element -> case element of
                                             State "start" stateBlock -> True
                                             _ -> False) block)
 
 
---stateeConversion :: Statement -> Statement -> [Environment] -> [Environment]
---stateeConversion (ParserSeq []) (Parser block) init = init
---stateeConversion (ParserSeq (x:xs)) (Parser block) init =
---    case x of 
---        FuncExpr (Extract (FuncVar pack) (FuncVar header)) -> 
---            stateeConversion (ParserSeq xs) ((prFunc_SetHeaderValidity (prFunc_SetEveryFieldValidity (Env init) headername Valid) headername Valid):i)
---            where headername = (drop 1 (dropWhile (/= '.') header))
---        _ -> stateeConversion (ParserSeq xs) ((Env init):i)
+stateConversion :: Statement -> Statement -> [Environment] -> [Environment]
+stateConversion (ParserSeq stateBlock) (Parser parserBlock) ((Env init):i) =
+    case transitions of
+        ["empty"] -> case transitionSelects of
+                        ["empty"] -> case extracts of
+                                        ["empty"] -> ((Env init):i)
+                                        _ -> ((extractHeader (Env init) extracts):i)
+                                    where extracts = containsExtract stateBlock
+                        _ -> case extracts of
+                                ["empty"] -> selectingTransition transitionSelects (Parser parserBlock) ((Env init):i)
+                                _ -> selectingTransition transitionSelects (Parser parserBlock) ((extractHeader (Env init) extracts):i)
+                            where extracts = containsExtract stateBlock
+                    where transitionSelects = containsTrSelect stateBlock                   
+        _ -> case extracts of
+                ["empty"] -> nestingTransition transitions (Parser parserBlock) ((Env init):i)
+                _ -> nestingTransition transitions (Parser parserBlock) ((extractHeader (Env init) extracts):i)
+            where extracts = containsExtract stateBlock
+    where transitions = containsTransition stateBlock
 
-stateConversion :: Statement -> [Environment] -> [Environment]
-stateConversion (ParserSeq []) init = init 
-stateConversion (ParserSeq (x:xs)) ((Env init):i) =
-    case x of 
-        Error -> [EnvError]
-        FuncExpr (Extract (FuncVar pack) (FuncVar header)) -> 
-            stateConversion (ParserSeq xs) ((prFunc_SetHeaderValidity (prFunc_SetEveryFieldValidity (Env init) headername Valid) headername Valid):i)
-            where headername = (drop 1 (dropWhile (/= '.') header))
-        _ -> stateConversion (ParserSeq xs) ((Env init):i)
+getTransition :: String -> [Statement] -> Statement
+getTransition stateName parserBlock =
+    case filterState of
+        [] -> EmptyStatement
+        _ -> case head filterState of
+                State str stateBlock -> stateBlock
+                _ -> EmptyStatement
+        where filterState = (filter (\x -> case x of
+                                            State str stateBlock -> str == stateName
+                                            _ -> False) parserBlock)
+
+selectingTransition :: [String] -> Statement -> [Environment] -> [Environment]
+selectingTransition [] (Parser parserBlock) init = []
+selectingTransition (trselect:xs) (Parser parserBlock) init =
+    case trselect of
+        "accept" -> init ++ (selectingTransition xs (Parser parserBlock) init)
+        _ -> (stateConversion (getTransition trselect parserBlock) (Parser parserBlock) init) ++ (selectingTransition xs (Parser parserBlock) init)
+
+nestingTransition :: [String] -> Statement -> [Environment] -> [Environment]
+nestingTransition [] (Parser parserBlock) init = init
+nestingTransition (transition:xs) (Parser parserBlock) init =
+    case transition of
+        "accept" -> init
+        "reject" -> init
+        _ -> case isValidName of
+                False -> nestingTransition xs (Parser parserBlock) (stateConversion (getTransition transition parserBlock) (Parser parserBlock) init)
+                True -> [EnvError]
+                where isValidName = (getTransition transition parserBlock) == EmptyStatement
+
+extractHeader :: Environment -> [String] -> Environment
+extractHeader (Env i) [] = (Env i)
+extractHeader (Env i) (headerName:xs) = extractHeader (head (prFunc_SetHeaderValidity (prFunc_SetEveryFieldValidity [Env i] headerName Valid) headerName Valid)) xs
+
+containsTrSelect :: [Statement] -> [String]
+containsTrSelect stateBlock =
+    case filterSelect of
+        [] -> ["empty"]
+        _ -> getTrSelectStrings filterSelect
+        where filterSelect = (filter (\x -> case x of
+                                            TransitionSelect str vars -> True
+                                            _ -> False) stateBlock)
+
+getTrSelectStrings :: [Statement] -> [String]
+getTrSelectStrings [] = []
+getTrSelectStrings ((TransitionSelect str vars):xs) = (map (\(Semi v1 v2) -> v2) vars) ++ getTrSelectStrings xs
+
+containsTransition :: [Statement] -> [String]
+containsTransition stateBlock =
+    case filterTransition of
+        [] -> ["empty"]
+        _ -> getTrStrings filterTransition
+        where filterTransition = (filter (\x -> case x of
+                                            Transition str -> True
+                                            _ -> False) stateBlock)
+
+getTrStrings :: [Statement] -> [String]
+getTrStrings [] = []
+getTrStrings ((Transition str):xs) = str : getTrStrings xs
+
+containsExtract :: [Statement] -> [String]
+containsExtract stateBlock =
+    case filterExtract of
+        [] -> ["empty"]
+        _ -> getExtractStrings filterExtract
+        where filterExtract = (filter (\x -> case x of 
+                                            FuncExpr (Extract (FuncVar pack) (FuncVar header)) -> True
+                                            _ -> False) stateBlock)
+
+getExtractStrings :: [Statement] -> [String]
+getExtractStrings [] = []
+getExtractStrings ((FuncExpr (Extract (FuncVar pack) (FuncVar header))):xs) = (drop 1 (dropWhile (/= '.') header)) : getExtractStrings xs
+
 
 ------------------------------------- CONTROL CONVERSION FUNCTION
 controlConversion :: [Statement] -> (([Environment], Environment), ([Program], [Program], [Program])) -> (([Environment], Environment), ([Program], [Program], [Program]))
@@ -135,9 +206,9 @@ assignmentConversion (Divide arith1 arith2) = (assignmentConversion arith1) ++ (
 
 functionConversion :: FunctionExpression -> Program
 functionConversion (FuncVar name) = ProgError
-functionConversion (Count (FuncVar name)) = SetHeaderValidity (name, Valid)
-functionConversion (SetValid (FuncVar name)) = SetHeaderValidity (name, Valid)
-functionConversion (SetInvalid (FuncVar name)) = SetHeaderValidity (name, Invalid)
+functionConversion (Count (FuncVar name)) = SetHeaderValidity name Valid
+functionConversion (SetValid (FuncVar name)) = SetHeaderValidity name Valid
+functionConversion (SetInvalid (FuncVar name)) = SetHeaderValidity name Invalid
 
 ------------------------------------- TABLE CONVERSION FUNCTIONS
 tableConversion :: Statement -> ([Program], [Program], [Program]) -> ([Program], [Program], [Program])
@@ -155,7 +226,7 @@ keyConversion (x:xs) =
 actsConversion :: [String] -> [Program] -> [Program]
 actsConversion [] actions = []
 actsConversion (x:xs) actions = 
-    (filter (\(ActCons id pr) -> if id == x then True else False) actions) ++ (actsConversion xs actions) 
+    (filter (\(ActCons id pr) -> id == x) actions) ++ (actsConversion xs actions) 
 
 ------------------------------------- APPLY CONVERSION FUNCTIONS
 applyConversion :: [Statement] -> [Program] -> [Program] -> Program
@@ -193,14 +264,14 @@ applyFuncConversion :: String -> [Program] -> Program
 applyFuncConversion tableName tables 
     | result == [] = Skip
     | otherwise = head result
-    where result = (filter (\(Table id keys progs) -> if id == tableName then True else False) tables)
+    where result = (filter (\(Table id keys progs) -> id == tableName) tables)
 
 emitConversion :: [Statement] -> Environment -> Environment
 emitConversion [] final = final
 emitConversion (x:xs) final =
     case x of
         FuncExpr (Emit (FuncVar name1) (FuncVar name2)) -> 
-            emitConversion xs (prFunc_SetHeaderValidity (prFunc_SetEveryFieldValidity final headername Valid) headername Valid)
+            emitConversion xs (head (prFunc_SetHeaderValidity (prFunc_SetEveryFieldValidity [final] headername Valid) headername Valid))
             where headername = (drop 1 (dropWhile (/= '.') name2))
         _ -> emitConversion xs final
 
@@ -208,7 +279,7 @@ actionCallConversion :: String -> [Program] -> Program
 actionCallConversion actionName actions
     | result == [] = Skip
     | otherwise = head result
-    where result = (filter (\(ActCons id pr) -> if id == actionName then True else False) actions)
+    where result = (filter (\(ActCons id pr) -> id == actionName) actions)
 
 ------------------------------------- MISC FUNCTIONS
 takeUntil :: String -> String -> String
@@ -249,8 +320,7 @@ dataToString (Table str keys acts) = "Table " ++ str ++ " " ++ (unwords keys) ++
 dataToString (ActCons str pr) = "Action " ++ str ++ " " ++ dataToString pr
 dataToString (ActAssignment str strs) = "Assignment " ++ str ++ (unwords strs)
 dataToString (Drop) = "Drop "
-dataToString (SetHeaderValidity (str, v)) = "SetHeader " ++ str ++ " " ++ (validityToString v)
-dataToString (SetFieldValidity str v) = "SetField " ++ str ++ " " ++ (validityToString v)
+dataToString (SetHeaderValidity str v) = "SetHeader " ++ str ++ " " ++ (validityToString v)
 
 validityToString :: Validity -> String
 validityToString Valid = "Valid"

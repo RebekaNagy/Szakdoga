@@ -21,52 +21,63 @@ data Program =
     | ActCons String Program
     | ActAssignment String [String]
     | Drop 
-    | SetHeaderValidity (String, Validity)
-    | SetFieldValidity String Validity deriving (Show, Eq)
+    | SetHeaderValidity String Validity deriving (Show, Eq)
 
 data SideCondition = SideCon [String] deriving Show
 
 
-type Rule = Environment -> Program -> SideCondition -> Environment
-
+type Rule = [Environment] -> Program -> SideCondition -> [Environment]
+------------------------------------- MAIN VERIFICATION FUNCTION
+verifyP4 :: Program -> [Environment] -> [Environment]
+verifyP4 EmptyProg envlist = [EnvError]
+verifyP4 ProgError envlist = [EnvError]
+verifyP4 Skip envlist = (fittingRule Skip envlist initRules) envlist Skip empSideCons
+verifyP4 (Seq program1 program2) envlist = envlist
+verifyP4 (If conds program1 program2) envlist = envlist
+verifyP4 (Table name keys actions) envlist = envlist
+verifyP4 (ActCons name action) envlist = (fittingRule (ActCons name action) envlist initRules) envlist (ActCons name action) empSideCons
+verifyP4 (ActAssignment left rights) envlist = (fittingRule (ActAssignment left rights) envlist initRules) envlist (ActAssignment left rights) empSideCons
+verifyP4 Drop envlist = (fittingRule Drop envlist initRules) envlist Drop empSideCons
+verifyP4 (SetHeaderValidity header validity) envlist = (fittingRule (SetHeaderValidity header validity) envlist initRules) envlist (SetHeaderValidity header validity) empSideCons
+--(fittingRule Drop env initRules) env Drop empSideCons
 ------------------------------------- PROGRAM FUNCTIONS
 
-prFunc_Skip :: Environment -> Environment
-prFunc_Skip env = env
+prFunc_Skip :: [Environment] -> [Environment]
+prFunc_Skip envlist = envlist
 --pl.: prFunc_Skip initEnv
 
-prFunc_Drop :: Environment -> Environment
-prFunc_Drop (Env l) = Env (map (\x@(id,(v, f)) -> if id == "drop" then (id,(Valid, f)) else x) l)
+prFunc_Drop :: [Environment] -> [Environment]
+prFunc_Drop envlist = map (\(Env l) -> Env (map (\x@(id,(v, f)) -> if id == "drop" then (id,(Valid, f)) else x) l)) envlist
 --pl.: prFunc_Drop initEnv
 
-prFunc_SetHeaderValidity :: Environment -> String -> Validity -> Environment
-prFunc_SetHeaderValidity (Env l) id v = Env (map (\x@(id', (v', f)) -> if id == id' then (id, (v, f)) else x) l)
+prFunc_SetHeaderValidity :: [Environment] -> String -> Validity -> [Environment]
+prFunc_SetHeaderValidity envlist id v = map (\(Env l) -> Env (map (\x@(id', (v', f)) -> if id == id' then (id, (v, f)) else x) l)) envlist
 --pl.: prFunc_SetHeaderValidity initEnv "ipv4" Valid
 
-prFunc_SetFieldValidity :: Environment -> String -> Validity-> Environment
-prFunc_SetFieldValidity (Env l) id v = Env (map (\x -> helper_SetFieldValidity x id v) l)
+prFunc_SetFieldValidity :: [Environment] -> String -> Validity-> [Environment]
+prFunc_SetFieldValidity envlist id v = map (\(Env l) -> Env (map (\x -> helper_SetFieldValidity x id v) l)) envlist
 --pl.: prFunc_SetFieldValidity initEnv "dstAddr" Invalid
 
-prFunc_SetEveryFieldValidity :: Environment -> String -> Validity -> Environment
-prFunc_SetEveryFieldValidity (Env l) header v = Env (map (\x@(hid, (hv, f)) -> if hid == header then (hid, (hv, (map (\(id, v') -> (id, v)) f))) else x) l)
+prFunc_SetEveryFieldValidity :: [Environment] -> String -> Validity -> [Environment]
+prFunc_SetEveryFieldValidity envlist header v = map (\(Env l) -> Env (map (\x@(hid, (hv, f)) -> if hid == header then (hid, (hv, (map (\(id, v') -> (id, v)) f))) else x) l)) envlist
 
-prFunc_If :: Environment -> Environment
-prFunc_If env = env
+prFunc_If :: [Environment] -> [Environment]
+prFunc_If envlist = envlist
 
-prFunc_Seq :: Environment -> Environment
-prFunc_Seq env = env
+prFunc_Seq :: [Environment] -> [Environment]
+prFunc_Seq envlist = envlist
 
-prFunc_Table :: Environment -> Environment
-prFunc_Table env = env
+prFunc_Table :: [Environment] -> [Environment]
+prFunc_Table envlist = envlist
 
 ------------------------------------- CALCULATING FUNCTIONS
 
-fittingRule :: Program -> [Rule] -> Rule
-fittingRule pr [] = (\(Env l) ProgError sidecons -> prFunc_Skip (Env l))
-fittingRule pr (x:xs) 
-    | x exampleEnv pr empSideCons == EnvError = fittingRule pr xs
-    | otherwise = x
---pl.: (fittingRule Drop initRules) initEnv Drop empSideCons
+fittingRule :: Program -> [Environment] -> [Rule] -> Rule
+fittingRule program envlist [] = (\env ProgError sidecons -> prFunc_Skip envlist)
+fittingRule program envlist (rule:xs) 
+    | rule envlist program empSideCons == [EnvError] = fittingRule program envlist xs
+    | otherwise = rule
+--pl.: (fittingRule Drop env initRules) env Drop empSideCons
 
 isValidSideCons :: SideCondition -> Environment -> Bool
 isValidSideCons (SideCon []) _ = True 
@@ -102,40 +113,31 @@ helper_getValidity str (x:xs)
 
 initRules :: [Rule]
 initRules = [
-        (\(Env l) pr sidecons -> case pr of
-            Drop -> prFunc_Drop (Env l)
-            _ -> EnvError),
-        (\(Env l) pr sidecons -> case pr of
-                Skip -> prFunc_Skip (Env l)
-                _ -> EnvError),
-        (\(Env l) pr sidecons -> case pr of
-                SetHeaderValidity (str,v) -> (prFunc_SetHeaderValidity (Env l) str usedValidity)
-                _ -> EnvError),
-        (\(Env l) pr sidecons -> case pr of
-                SetFieldValidity str v -> (prFunc_SetFieldValidity (Env l) str usedValidity)
-                _ -> EnvError),
-        (\(Env l) pr sidecons -> case pr of
-                If str pr1 pr2 -> prFunc_If (Env l)
-                _ -> EnvError),
-        (\(Env l) pr sidecons -> case pr of
-                Seq pr1 pr2 -> prFunc_Seq (Env l)
-                _ -> EnvError),
-        (\(Env l) pr sidecons -> case pr of
-                Table str keys prs -> prFunc_Table (Env l)
-                _ -> EnvError)
+        (\environmentList pr sidecons -> case pr of
+                Drop -> prFunc_Drop environmentList
+                _ -> [EnvError]),
+        (\environmentList pr sidecons -> case pr of
+                Skip -> prFunc_Skip environmentList
+                _ -> [EnvError]),
+        (\environmentList pr sidecons -> case pr of
+                SetHeaderValidity str v -> (prFunc_SetHeaderValidity environmentList str v)
+                _ -> [EnvError]),
+        (\environmentList pr sidecons -> case pr of
+                ActAssignment str strs -> (prFunc_SetFieldValidity environmentList str Valid)
+                _ -> [EnvError]),
+        (\environmentList pr sidecons -> case pr of
+                If str pr1 pr2 -> prFunc_If environmentList
+                _ -> [EnvError]),
+        (\environmentList pr sidecons -> case pr of
+                Seq pr1 pr2 -> prFunc_Seq environmentList
+                _ -> [EnvError]),
+        (\environmentList pr sidecons -> case pr of
+                Table str keys prs -> prFunc_Table environmentList
+                _ -> [EnvError])
         ]
-
-usedStr :: String
-usedStr = "ipv4"
-
-usedValidity :: Validity
-usedValidity = Valid
 
 empSideCons :: SideCondition
 empSideCons = SideCon []
-
-ifSideCons :: SideCondition
-ifSideCons = SideCon ["a"]
 
 exampleEnv :: Environment
 exampleEnv = Env [

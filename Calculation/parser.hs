@@ -37,14 +37,14 @@ data Statement = Error
     | Include String
     | Typedef
     | EmptyStatement
-    deriving Show 
+    deriving (Show, Eq)
 
 data Variable = ParserField (String, String)
     | StructField (String, String)
     | VarElements [String]
     | ParameterVar Variable
     | Semi String String 
-    | Var String deriving Show
+    | Var String deriving (Show, Eq)
 
 data FunctionExpression = FuncVar String
     | ActionVar String
@@ -53,7 +53,7 @@ data FunctionExpression = FuncVar String
     | SetValid FunctionExpression
     | SetInvalid FunctionExpression
     | Emit FunctionExpression FunctionExpression 
-    | Extract FunctionExpression FunctionExpression deriving Show
+    | Extract FunctionExpression FunctionExpression deriving (Show, Eq)
 
 data ArithmeticExpression = ArithVar String
     | NumConstant String
@@ -61,7 +61,7 @@ data ArithmeticExpression = ArithVar String
     | Add ArithmeticExpression ArithmeticExpression
     | Subtract ArithmeticExpression ArithmeticExpression
     | Multiply ArithmeticExpression ArithmeticExpression
-    | Divide ArithmeticExpression ArithmeticExpression deriving Show
+    | Divide ArithmeticExpression ArithmeticExpression deriving (Show, Eq)
 
 data BoolExpression = BoolVar String
     | BoolConstant Bool
@@ -72,7 +72,7 @@ data BoolExpression = BoolVar String
     | Equal BoolExpression BoolExpression
     | Inequal BoolExpression BoolExpression 
     | Greater BoolExpression BoolExpression
-    | Less BoolExpression BoolExpression deriving Show
+    | Less BoolExpression BoolExpression deriving (Show, Eq)
 
 languageDef =
     emptyDef { Token.commentStart    = "/*"
