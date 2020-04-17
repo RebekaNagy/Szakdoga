@@ -125,7 +125,7 @@ nestingTransition (transition:xs) (Parser parserBlock) init =
 
 extractHeader :: Environment -> [String] -> Environment
 extractHeader (Env i) [] = (Env i)
-extractHeader (Env i) (headerName:xs) = extractHeader (head (prFunc_SetHeaderValidity (prFunc_SetEveryFieldValidity [Env i] headerName Valid) headerName Valid)) xs
+extractHeader (Env i) (headerName:xs) = extractHeader (setValidity (Env i) headerName Valid) xs
 
 containsTrSelect :: [Statement] -> [String]
 containsTrSelect stateBlock =
@@ -271,8 +271,8 @@ emitConversion [] final = final
 emitConversion (x:xs) final =
     case x of
         FuncExpr (Emit (FuncVar name1) (FuncVar name2)) -> 
-            emitConversion xs (head (prFunc_SetHeaderValidity (prFunc_SetEveryFieldValidity [final] headername Valid) headername Valid))
-            where headername = (drop 1 (dropWhile (/= '.') name2))
+            emitConversion xs (setValidity final headerName Valid)
+            where headerName = (drop 1 (dropWhile (/= '.') name2))
         _ -> emitConversion xs final
 
 actionCallConversion :: String -> [Program] -> Program
@@ -289,6 +289,11 @@ takeUntil s (y:ys)
     | isPrefixOf s (y:ys) = []
     | otherwise = y : (takeUntil s (tail (y:ys)))
 
+setValidity :: Environment -> String -> Validity -> Environment
+setValidity (Env env) header validity = Env (map (\x@(id, (v, f)) -> if id == header then (setEveryFieldValidity x validity) else x) env)
+
+setEveryFieldValidity :: Header -> Validity -> Header
+setEveryFieldValidity (hid, (hv, fields)) validity = (hid, (validity, (map (\(fid, fv) -> (fid, validity)) fields)))
 ------------------------------------- VARIABLES
 
 initEnv :: [Environment]
