@@ -188,7 +188,7 @@ actionConversion (x:xs) =
     case x of
         Error -> ProgError
         ParserDrop -> Seq Drop (actionConversion xs)
-        ParserAssignment variable expression ->  Seq (ActAssignment (drop 1 (dropWhile (/= '.') variable)) (assignmentConversion expression)) (actionConversion xs)
+        ParserAssignment variable expression ->  Seq (Assignment (drop 1 (dropWhile (/= '.') variable)) (assignmentConversion expression)) (actionConversion xs)
         FuncExpr funcexpression -> case validExpr of
                 ProgError -> ProgError
                 _ -> Seq validExpr (actionConversion xs)
@@ -226,7 +226,10 @@ keyConversion (x:xs) =
 actsConversion :: [String] -> [Program] -> [Program]
 actsConversion [] actions = []
 actsConversion (x:xs) actions = 
-    (filter (\(ActCons id pr) -> id == x) actions) ++ (actsConversion xs actions) 
+    case action of
+        [] -> [] ++ (actsConversion xs actions)
+        _ -> (head action) : (actsConversion xs actions)
+    where action = (filter (\(ActCons id pr) -> id == x) actions)
 
 ------------------------------------- APPLY CONVERSION FUNCTIONS
 applyConversion :: [Statement] -> [Program] -> [Program] -> Program
@@ -245,7 +248,7 @@ applyConversion (x:xs) actions tables =
                 (Emit (FuncVar name1) (FuncVar name2)) -> (applyConversion xs actions tables)
                 (ActionVar name) -> (Seq (actionCallConversion name actions) (applyConversion xs actions tables))
                 _ -> Seq (functionConversion fexpr) (applyConversion xs actions tables)
-        ParserAssignment variable aexpr -> (Seq (ActAssignment (drop 1 (dropWhile (/= '.') variable)) (assignmentConversion aexpr)) (applyConversion xs actions tables))
+        ParserAssignment variable aexpr -> (Seq (Assignment (drop 1 (dropWhile (/= '.') variable)) (assignmentConversion aexpr)) (applyConversion xs actions tables))
         _ -> applyConversion xs actions tables
 
 condConversion :: BoolExpression -> [String]
@@ -323,7 +326,7 @@ dataToString (Seq pr1 pr2) = "Seq " ++ dataToString pr1 ++ " " ++ dataToString p
 dataToString (If conds pr1 pr2) = "If " ++ (unwords conds) ++ dataToString pr1 ++ dataToString pr2  ++ " "
 dataToString (Table str keys acts) = "Table " ++ str ++ " " ++ (unwords keys) ++ " " ++ (unwords (map (\x -> dataToString x) acts))
 dataToString (ActCons str pr) = "Action " ++ str ++ " " ++ dataToString pr
-dataToString (ActAssignment str strs) = "Assignment " ++ str ++ (unwords strs)
+dataToString (Assignment str strs) = "Assignment " ++ str ++ (unwords strs)
 dataToString (Drop) = "Drop "
 dataToString (SetHeaderValidity str v) = "SetHeader " ++ str ++ " " ++ (validityToString v)
 

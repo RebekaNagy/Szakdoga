@@ -16,6 +16,7 @@ main = do
     let first = fst out
     let second = snd out
     let strprog = programToString second
+    let verifyenv = verifyP4 (fst first) (head second)
     putStrLn "Initial:"
     mapM print (fst first)
     putStrLn ""
@@ -23,10 +24,13 @@ main = do
     print (snd first)
     putStrLn ""
     putStrLn "Program:"
-    print second
+    mapM print second
     putStrLn ""
     putStrLn "Program as string:"
     putStr strprog
+    putStrLn ""
+    putStrLn "VerifyEnvironment:"
+    mapM print verifyenv
     return strprog
 
 --ghc --make -shared calculation.hs
