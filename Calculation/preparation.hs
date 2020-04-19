@@ -252,7 +252,10 @@ applyConversion (x:xs) actions tables =
         _ -> applyConversion xs actions tables
 
 condConversion :: BoolExpression -> [String]
-condConversion (BoolVar name) = [name]
+condConversion (BoolVar name) 
+    | newName == "" = []
+    | otherwise = [newName]
+    where newName = (drop 1 (dropWhile (/= '.') name))
 condConversion (BoolConstant bool) = []
 condConversion (IsValid expr) = condConversion expr
 condConversion (Not expr) = condConversion expr
@@ -285,12 +288,6 @@ actionCallConversion actionName actions
     where result = (filter (\(ActCons id pr) -> id == actionName) actions)
 
 ------------------------------------- MISC FUNCTIONS
-takeUntil :: String -> String -> String
-takeUntil s [] = [] 
-takeUntil [] ys = [] 
-takeUntil s (y:ys) 
-    | isPrefixOf s (y:ys) = []
-    | otherwise = y : (takeUntil s (tail (y:ys)))
 
 setValidity :: Environment -> String -> Validity -> Environment
 setValidity (Env env) header validity = Env (map (\x@(id, (v, f)) -> if id == header then (setEveryFieldValidity x validity) else x) env)

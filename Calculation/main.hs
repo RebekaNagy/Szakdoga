@@ -16,7 +16,9 @@ main = do
     let first = fst out
     let second = snd out
     let strprog = programToString second
-    let verifyenv = verifyP4 (fst first) (head second)
+    let verifyenv = verifyP4 (fst first) (head second) empSideCons
+    let verifyenv2 = concat (map (\x -> verifyP4 [x] (head second) empSideCons) (fst first))
+    let egyenlo = verifyenv == verifyenv2
     putStrLn "Initial:"
     mapM print (fst first)
     putStrLn ""
@@ -31,6 +33,9 @@ main = do
     putStrLn ""
     putStrLn "VerifyEnvironment:"
     mapM print verifyenv
+    putStrLn ""
+    putStrLn "egyenlo:"
+    print egyenlo
     return strprog
 
 --ghc --make -shared calculation.hs

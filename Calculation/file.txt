@@ -63,8 +63,6 @@ control ingressImpl(inout headers_t hdr,
                     inout metadata_t meta,
                     inout standard_metadata_t stdmeta)
 {
-    direct_counter(CounterType.packets) ipv4_da_lpm_stats;
-
     action set_l2ptr(bit<32> l2ptr) {
         ipv4_da_lpm_stats.count();
         meta.fwd_metadata.l2ptr = l2ptr;
@@ -106,14 +104,11 @@ control ingressImpl(inout headers_t hdr,
     }
 
     apply {
-        if (hdr.ipv4.ttl.isValid())
+        if (hdr.ipv4.ttl.isValid() && hdr.ethernet.dstAddr == 1)
         {
             ipv4_da_lpm.apply();
-        }
-        else {
             mac_da.apply();
-        }
-        set_bd_dmac_intf();        
+        }       
     }
 }
 
