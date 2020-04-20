@@ -17,7 +17,7 @@ namespace P4Verification.Model
         private static extern unsafe void hs_exit();
 
         [DllImport("..\\..\\..\\Calculation.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
-        private static extern unsafe char* cCalculate([MarshalAs(UnmanagedType.LPWStr)]string i);
+        private static extern unsafe char* cCalculate([MarshalAs(UnmanagedType.LPWStr)]string p, [MarshalAs(UnmanagedType.LPWStr)]string c);
 
         #endregion
 
@@ -33,11 +33,11 @@ namespace P4Verification.Model
             unsafe { hs_exit(); }
         }
 
-        public string HsCalculate(string i)
+        public string HsCalculate(string program, string conditions)
         {
             unsafe
             {
-                String result = new String(cCalculate(i));
+                String result = new String(cCalculate(program, conditions));
                 return result;
             }
         }

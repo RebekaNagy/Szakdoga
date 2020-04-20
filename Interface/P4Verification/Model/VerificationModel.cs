@@ -48,7 +48,6 @@ namespace P4Verification.Model
         
         public HaskellCalculation hscalculation { get; set; }
 
-        public HaskellString hsstring { get; set; }
 
         public event EventHandler<CalculationEventArgs> CalculationDone;
         public event EventHandler<ErrorEventArgs> Error;
@@ -57,10 +56,9 @@ namespace P4Verification.Model
             OutputString = "A végeredmény itt fog megjelenni.";
             InputString = "Kód bemásolása.";
             hscalculation = new HaskellCalculation();
-            hsstring = new HaskellString();
         }
 
-        public void Calculate(string input, bool locking)
+        public void Calculate(string input, string conds, bool locking)
         {
             if(locking)
             {
@@ -68,7 +66,7 @@ namespace P4Verification.Model
                 {
                     InputString = input;
                     //OutputString = hsstring.CopyString(InputString);
-                    OutputString = hscalculation.HsCalculate(InputString);
+                    OutputString = hscalculation.HsCalculate(InputString, conds);
                     OnCalculationDone(OutputString);
                     ErrorString = "";
                     OnNewError(ErrorString);

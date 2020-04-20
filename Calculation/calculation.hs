@@ -10,12 +10,14 @@ import Foreign.C.String
 import System.IO.Unsafe
 import Control.Monad.IO.Class
 
-helpCalculate :: String -> String
-helpCalculate str =
-    programToString (snd (mainConversion (parseString str) ((initEnv, finalEnv), (initActions, initTables, initProg))))
+helpCalculate :: String -> String -> String
+helpCalculate program conditions = envListToString (verifyP4 (fst (fst prepared)) (snd prepared) sidecons)
+    where { prepared = (mainConversion (parseString program) ((initEnv, finalEnv), (initActions, initTables, initProg)));
+        sidecons = sideConditionConversion conditions
+        }
 
-cCalculate :: CWString -> CWString
-cCalculate cStr = unsafePerformIO $ withCWString result $ (\newCStr -> return newCStr)
-    where result = helpCalculate (unsafePerformIO (peekCWString cStr))
+cCalculate :: CWString -> CWString -> CWString
+cCalculate program conditions = unsafePerformIO $ withCWString result $ (\newCStr -> return newCStr)
+    where result = helpCalculate (unsafePerformIO (peekCWString program)) (unsafePerformIO (peekCWString conditions))
 
-foreign export ccall cCalculate :: CWString -> CWString
+foreign export ccall cCalculate :: CWString -> CWString -> CWString

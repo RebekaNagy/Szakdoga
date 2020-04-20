@@ -118,6 +118,8 @@ namespace P4Verification.ViewModel
             }
         }
 
+        public string ConditionString { get; set; }
+
         public SelectCondition SelectConds { get; set; }
         public TableCondition TableConds { get; set; }
         public AssignmentCondition AssignmentConds { get; set; }
@@ -161,7 +163,7 @@ namespace P4Verification.ViewModel
             model.CalculationDone += new EventHandler<CalculationEventArgs>(Model_CalculationDone);
             model.Error += new EventHandler<ErrorEventArgs>(Model_Error);
 
-            CalculateCommand = new DelegateCommand(param => Model.Calculate(Input, Locking));
+            CalculateCommand = new DelegateCommand(param => Model.Calculate(Input, ConditionString, Locking));
             ReadInputCommand = new DelegateCommand(param => OnReadInput());
             LockCommand = new DelegateCommand(param => LockConditions());
             EditCommand = new DelegateCommand(param => EditConditions());
@@ -183,8 +185,14 @@ namespace P4Verification.ViewModel
 
         private void LockConditions()
         {
+            ConditionString = SelectedSelect.ToString() +
+                SelectedTable.ToString() +
+                SelectedAssignment.ToString() +
+                SelectedSetHeader.ToString() +
+                SelectedDrop.ToString();
             Locking = true;
             Editing = false;
+
         }
         private void EditConditions()
         {

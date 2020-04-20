@@ -6,21 +6,21 @@ import Verification
 
 ------------------------------------- MAIN CONVERSION FUNCTIONS
 
-mainConversion :: [Statement] -> (([Environment], Environment), ([Program], [Program], [Program]))-> (([Environment], Environment), [Program])
+mainConversion :: [Statement] -> (([Environment], Environment), ([Program], [Program], [Program]))-> (([Environment], Environment), Program)
 mainConversion [] ((init, final), (actions, tables, prog)) =
     case filteredProgram of
-        [] -> ((init, final), [EmptyProg])
-        _ -> ((init, final), filteredProgram)
+        [] -> ((init, final), EmptyProg)
+        _ -> ((init, final), (listToProgram filteredProgram))
     where filteredProgram = (filter (\x -> x /= Skip) prog)
 mainConversion (x:xs) ((init, final), (actions, tables, prog)) =
     case prog of
-        [ProgError] -> ((init, final), [ProgError])
+        [ProgError] -> ((init, final), ProgError)
         _ -> case x of
             ParserHeader name fields -> mainConversion xs ((headerConversion x (init, final)), (actions, tables, prog))
             ParserStruct sname sfields -> mainConversion xs ((headerConversion x (init, final)), (actions, tables, prog))
             Parser block -> mainConversion xs (((parserConversion x init), final), (actions, tables, prog))
             Control cname cblock -> mainConversion xs (controlConversion cblock ((init, final), (actions, tables, prog)))
-            Error -> ((init, final), [ProgError])
+            Error -> ((init, final), ProgError)
             _ -> mainConversion xs ((init, final), (actions, tables, prog))
 
 ------------------------------------- HEADER CONVERSION FUNCTIONS
@@ -287,13 +287,73 @@ actionCallConversion actionName actions
     | otherwise = head result
     where result = (filter (\(ActCons id pr) -> id == actionName) actions)
 
-------------------------------------- MISC FUNCTIONS
+------------------------------------- SIDECONDITION CONVERSION FUNCTIONS
 
+sideConditionConversion :: String -> SideCondition
+sideConditionConversion (a:b:c:d:e:[])
+    | ifc /= IfError && tablec /= TableError && assignc /= AssignmentError && sethc /= SetHeaderError && dropc /= DropError = 
+        SideCon (ifc, tablec, assignc, sethc, dropc)
+    | otherwise = SideCondError
+    where { ifc = ifCondConversion a;
+        tablec = tableCondConversion b;
+        assignc = assignCondConversion c;
+        sethc = setHeaderCondConversion d;
+        dropc = dropCondConversion e
+    }
+sideConditionConversion _ = SideCondError
+
+ifCondConversion :: Char -> IfCondition
+ifCondConversion '0' = NoneIf
+ifCondConversion '1' = CondsValid
+ifCondConversion '2' = CondsInvalid
+ifCondConversion _ = IfError
+
+tableCondConversion :: Char -> TableCondition
+tableCondConversion '0' = NoneTable 
+tableCondConversion '1' = KeysValid
+tableCondConversion '2' = KeysInvalid
+tableCondConversion _ = TableError
+
+assignCondConversion :: Char -> AssignmentCondition
+assignCondConversion '0' = NoneAssignment 
+assignCondConversion '1' = LeftValid
+assignCondConversion '2' = LeftInvalid
+assignCondConversion '3' = RightValid
+assignCondConversion '4' = RightInvalid
+assignCondConversion '5' = EveryValid
+assignCondConversion '6' = EveryInvalid
+assignCondConversion _ = AssignmentError
+
+setHeaderCondConversion :: Char -> SetHeaderCondition
+setHeaderCondConversion '0' = NoneSetHeader 
+setHeaderCondConversion '1' = HeaderValid 
+setHeaderCondConversion '2' = HeaderInvalid
+setHeaderCondConversion '3' = FieldsValid
+setHeaderCondConversion '4' = FieldsInvalid
+setHeaderCondConversion _ = SetHeaderError
+
+dropCondConversion :: Char -> DropCondition
+dropCondConversion '0' = NoneDrop 
+dropCondConversion '1' = DropValid
+dropCondConversion '2' = DropInvalid
+dropCondConversion '3' = EveryHeaderValid
+dropCondConversion '4' = EveryHeaderInvalid
+dropCondConversion '5' = EveryFieldValid
+dropCondConversion '6' = EveryFieldInvalid 
+dropCondConversion _ = DropError
+
+
+------------------------------------- MISC FUNCTIONS
 setValidity :: Environment -> String -> Validity -> Environment
 setValidity (Env env) header validity = Env (map (\x@(id, (v, f)) -> if id == header then (setEveryFieldValidity x validity) else x) env)
 
 setEveryFieldValidity :: Header -> Validity -> Header
 setEveryFieldValidity (hid, (hv, fields)) validity = (hid, (validity, (map (\(fid, fv) -> (fid, validity)) fields)))
+
+listToProgram :: [Program] -> Program
+listToProgram [] = Skip
+listToProgram [x] = x
+listToProgram (x:xs) = Seq (x) (listToProgram xs)
 ------------------------------------- VARIABLES
 
 initEnv :: [Environment]
@@ -311,10 +371,6 @@ initActions = []
 initTables :: [Program]
 initTables = []
 
-programToString ::[Program] -> String
-programToString [] = "\n"
-programToString (x:xs) = dataToString x ++ programToString xs
-
 dataToString :: Program -> String
 dataToString (EmptyProg) = "A program nem tartalmaz verifikálásra alkalmas részt."
 dataToString (ProgError) = "A program szintaktikailag helytelen, vagy a vizsgált résznyelven kívül esik."
@@ -331,3 +387,18 @@ validityToString :: Validity -> String
 validityToString Valid = "Valid"
 validityToString Invalid = "Invalid"
 validityToString Undefined = "Undefined"
+
+envListToString :: [Environment] -> String
+envListToString [] = ""
+envListToString (x:xs) = (envToString x) ++ "\n" ++ (envListToString xs)
+
+envToString :: Environment -> String
+envToString (Env []) = ""
+envToString (Env (x:xs)) = headerToString x ++ "\n" ++ (envToString (Env xs))
+
+headerToString :: Header -> String
+headerToString (header, (validity, fields)) = "fejléc: (" ++ header ++ ", " ++ (validityToString validity) ++ ")\n mezők:" ++ fieldsToString fields
+
+fieldsToString :: [Field] -> String
+fieldsToString [] = ""
+fieldsToString ((name, validity):xs) = "(" ++ name ++ ", " ++ (validityToString validity) ++ ") " ++ (fieldsToString xs) 

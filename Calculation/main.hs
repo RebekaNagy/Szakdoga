@@ -15,9 +15,9 @@ main = do
     let out = mainConversion result ((initEnv, finalEnv), (initActions, initTables, initProg))
     let first = fst out
     let second = snd out
-    let strprog = programToString second
-    let verifyenv = verifyP4 (fst first) (head second) empSideCons
-    let verifyenv2 = concat (map (\x -> verifyP4 [x] (head second) empSideCons) (fst first))
+    let strprog = dataToString second
+    let verifyenv = verifyP4 (fst first) second empSideCons
+    let verifyenv2 = concat (map (\x -> verifyP4 [x] second empSideCons) (fst first))
     let egyenlo = verifyenv == verifyenv2
     putStrLn "Initial:"
     mapM print (fst first)
@@ -26,7 +26,7 @@ main = do
     print (snd first)
     putStrLn ""
     putStrLn "Program:"
-    mapM print second
+    print second
     putStrLn ""
     putStrLn "Program as string:"
     putStr strprog

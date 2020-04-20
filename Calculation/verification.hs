@@ -25,42 +25,47 @@ data Program =
     | Drop 
     | SetHeaderValidity String Validity deriving (Show, Eq)
 
-data SideCondition = SideCon (IfCondition, TableCondition, AssignmentCondition, SetHeaderCondition, DropCondition) deriving (Show, Eq)
+data SideCondition = SideCon (IfCondition, TableCondition, AssignmentCondition, SetHeaderCondition, DropCondition) | SideCondError deriving (Show, Eq)
 
 data IfCondition = 
-        NoneIf
-        | CondsValid
-        | CondsInvalid deriving (Show, Eq)
+    NoneIf
+    | CondsValid
+    | CondsInvalid 
+    | IfError deriving (Show, Eq)
 
 data TableCondition = 
-        NoneTable 
-        | KeysValid
-        | KeysInvalid deriving (Show, Eq)
+    NoneTable 
+    | KeysValid
+    | KeysInvalid
+    | TableError deriving (Show, Eq)
 
 data AssignmentCondition = 
-        NoneAssignment 
-        | LeftValid
-        | LeftInvalid
-        | RightValid
-        | RightInvalid
-        | EveryValid
-        | EveryInvalid deriving (Show, Eq)
+    NoneAssignment 
+    | LeftValid
+    | LeftInvalid
+    | RightValid
+    | RightInvalid
+    | EveryValid
+    | EveryInvalid 
+    | AssignmentError deriving (Show, Eq)
 
 data SetHeaderCondition = 
-        NoneSetHeader 
-        | HeaderValid 
-        | HeaderInvalid
-        | FieldsValid
-        | FieldsInvalid deriving (Show, Eq)
+    NoneSetHeader 
+    | HeaderValid 
+    | HeaderInvalid
+    | FieldsValid
+    | FieldsInvalid 
+    | SetHeaderError deriving (Show, Eq)
 
 data DropCondition = 
-        NoneDrop 
-        | DropValid
-        | DropInvalid
-        | EveryHeaderValid
-        | EveryHeaderInvalid
-        | EveryFieldValid
-        | EveryFieldInvalid deriving (Show, Eq)
+    NoneDrop 
+    | DropValid
+    | DropInvalid
+    | EveryHeaderValid
+    | EveryHeaderInvalid
+    | EveryFieldValid
+    | EveryFieldInvalid 
+    | DropError deriving (Show, Eq)
 
 type Rule = [Environment] -> Program -> SideCondition -> [Environment]
 ------------------------------------- MAIN VERIFICATION FUNCTION
@@ -170,12 +175,6 @@ getHeaderValidity name (Env ((headerName, (headerValidity, fields)):xs))
     | headerName == name = headerValidity
     | otherwise = getHeaderValidity name (Env xs)
 
-getFieldValidity :: String -> Environment -> Validity
-getFieldValidity name (Env []) = Undefined
-getFieldValidity name (Env ((headerName, (headerValidity, fields)):xs))
-    | (takeUntil "." name) == headerName = helper_getValidity name fields
-    | otherwise = getFieldValidity name (Env xs)
-
 getValidity :: String -> Environment -> Validity
 getValidity name (Env []) = Undefined
 getValidity name (Env ((headerName, (headerValidity, fields)):xs))
@@ -196,6 +195,9 @@ takeUntil [] ys = []
 takeUntil s (y:ys) 
     | isPrefixOf s (y:ys) = []
     | otherwise = y : (takeUntil s (tail (y:ys)))
+
+------------------------------------- COMPARATIVE FUNCTIONS
+
 
 ------------------------------------- RULES
 

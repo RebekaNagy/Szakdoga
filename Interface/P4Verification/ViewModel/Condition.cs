@@ -8,7 +8,7 @@ namespace P4Verification.ViewModel
     public class Condition
     {
         public ObservableCollection<string> ConditionOptions { get; set; }
-        
+        public List<string> ConditionForHaskell { get; set; }
         public Condition() { }
     }
 
