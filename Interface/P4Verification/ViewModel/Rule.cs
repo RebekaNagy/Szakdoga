@@ -6,24 +6,6 @@ using System.Text;
 
 namespace P4Verification.ViewModel
 {
-    /*
-    E : h.setinvalid() => E[h->invalid], True
-
-    E: S1;S2   => 
-    (E: S1) : S2, True
-
-    E: if (b) P1 => [E[C ++ b]: P1] ++ [E[C ++ -b]: Skip], b.headers_fields().Valid()
-
-    E: table k: {ki} a : {ai} =>  E: ai   , ki.headers_fields().Valid()
-
-    | Seq 
-    | If 
-    | Table 
-    | ActCons 
-    | ActAssignment [String]
-    | Drop 
-    | SetHeaderValidity
-    */
     public class Rule
     {
         public string Name { get; set; }

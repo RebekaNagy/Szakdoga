@@ -55,77 +55,70 @@
                        HorizontalAlignment="Left" 
                        TextWrapping="Wrap" />
         </ScrollViewer>
-        <Grid Grid.Column="1">
+        <Grid Grid.Column="1" Height="180" VerticalAlignment="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="10*"/>
-                <RowDefinition Height="9*"/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
             </Grid.RowDefinitions>
-            <StackPanel Grid.Row="0">
-                <Grid Height="90">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0">
-                        <Label Content="Bal oldal:" Margin="0,20,0,0"/>
-                        <ComboBox Name="firstcombo" Margin="0,0,0,0"
-                              ItemsSource="{Binding Rules}" 
-                              SelectedItem="{Binding SelectedFirst}"
-                              DisplayMemberPath="Name"/>
-                    </StackPanel>
-                    <StackPanel Grid.Column="1">
-                        <Label Content="Jobb oldal:" Margin="0,20,0,0"/>
-                        <ComboBox Name="secondcombo" Margin="0,0,0,0"
-                              ItemsSource="{Binding SelectedFirst.RuleActions}"
-                              SelectedItem="{Binding SelectedSecond}"/>
-                    </StackPanel>
-                    <StackPanel Grid.Column="2">
-                        <Label Content="Feltetelek:" Margin="0,20,0,0"/>
-                        <ComboBox Name="thirdcombo" Margin="0,0,0,0"
-                              ItemsSource="{Binding SelectedFirst.SideConditions}"
-                              SelectedItem="{Binding SelectedThird}"/>
-                    </StackPanel>
-                </Grid>
-                <Button 
-                    Content="Szabály generálása"
-                    Width="150"
-                    Height="25"
-                    HorizontalAlignment="Right"
-                    Command="{Binding GenerateRuleCommand}" />
-                <TextBlock
-                    TextWrapping="Wrap" 
-                    Foreground="Red"
-                    Text="{Binding ErrorMessage}" 
-                    Width="200" Height="50"
-                    VerticalAlignment="Top"
-                    HorizontalAlignment="Left"/>                
-                <TextBlock
-                    x:Name="NewRule"
-                    Background="#FFD4D4D4"
-                    Text="{Binding NewStringRule}"
-                    Height="30"
-                    Width="350" Margin="0,11,0,0"/>
-                <Button
-                    Name="AddRuleButton"
-                    Content="Szabály hozzáadása"
-                    Command="{Binding AddRuleCommand}"
-                    Height="25"
-                    Width="150"
-                    HorizontalAlignment="Right" Margin="0,10,0,0"/>
-            </StackPanel>
-            <ListView Name="ruleList"
-                      ItemsSource="{Binding StringRules}"
-                      SelectedItem="{Binding SelectedStringRule}" 
-                      Grid.Row="1" Margin="10,30,0,50"/>
-            <Button Name="DeleteRule"
-                    Content="Szabály törlése"
-                    Command="{Binding DeleteRuleCommand}" Grid.Row="1" 
-                    Margin="0,0,0,10" 
-                    Height="30" 
-                    VerticalAlignment="Bottom" 
-                    HorizontalAlignment="Right" 
-                    Width="200"/>
+            <Label Grid.Row="0" Grid.Column="0" Content="Szabályok"
+                   VerticalAlignment="Center" VerticalContentAlignment="Center"
+                   HorizontalAlignment="Center" HorizontalContentAlignment="Center" FontSize="14"/>
+            <Label Grid.Row="0" Grid.Column="1" Content="Feltételek" 
+                   VerticalAlignment="Center" VerticalContentAlignment="Center"
+                   HorizontalAlignment="Center" HorizontalContentAlignment="Center" FontSize="14"/>
+            <Label Grid.Row="1" Grid.Column="0" Content="Elágazás (if)" 
+                   VerticalAlignment="Center" VerticalContentAlignment="Center"
+                   HorizontalAlignment="Center" HorizontalContentAlignment="Center"/>
+            <Label Grid.Row="2" Grid.Column="0" Content="Tábla (table)" 
+                   VerticalAlignment="Center" VerticalContentAlignment="Center"
+                   HorizontalAlignment="Center" HorizontalContentAlignment="Center"/>
+            <Label Grid.Row="3" Grid.Column="0" Content="Értékadás" 
+                   VerticalAlignment="Center" VerticalContentAlignment="Center"
+                   HorizontalAlignment="Center" HorizontalContentAlignment="Center"/>
+            <Label Grid.Row="4" Grid.Column="0" Content="Fejléc validitás (setValid, setInvalid)" 
+                   VerticalAlignment="Center" VerticalContentAlignment="Center"
+                   HorizontalAlignment="Center" HorizontalContentAlignment="Center"/>
+            <Label Grid.Row="5" Grid.Column="0" Content="Fejlécek elvetése (drop)" 
+                   VerticalAlignment="Center" VerticalContentAlignment="Center"
+                   HorizontalAlignment="Center" HorizontalContentAlignment="Center"/>
+            <ComboBox Name="elagazas" Grid.Column="1" Grid.Row="1"
+                      VerticalAlignment="Center" IsEnabled="{Binding Editing}"
+                      ItemsSource="{Binding SelectConds.ConditionOptions}"
+                      SelectedIndex="{Binding SelectedSelect}"/>
+            <ComboBox x:Name="tabla" Grid.Column="1" Grid.Row="2"
+                      VerticalAlignment="Center" IsEnabled="{Binding Editing}"
+                      ItemsSource="{Binding TableConds.ConditionOptions}"
+                      SelectedIndex="{Binding SelectedTable}"/>
+            <ComboBox Name="ertekadas" Grid.Column="1" Grid.Row="3"
+                      VerticalAlignment="Center" IsEnabled="{Binding Editing}"
+                      ItemsSource="{Binding AssignmentConds.ConditionOptions}"
+                      SelectedIndex="{Binding SelectedAssignment}"/>
+            <ComboBox Name="fejlecvaliditas" Grid.Column="1" Grid.Row="4"
+                      VerticalAlignment="Center" IsEnabled="{Binding Editing}"
+                      ItemsSource="{Binding SetHeaderConds.ConditionOptions}"
+                      SelectedIndex="{Binding SelectedSetHeader}"/>
+            <ComboBox Name="fejlecelvetes" Grid.Column="1" Grid.Row="5"
+                      VerticalAlignment="Center" IsEnabled="{Binding Editing}"
+                      ItemsSource="{Binding DropConds.ConditionOptions}"
+                      SelectedIndex="{Binding SelectedDrop}"/>
         </Grid>
+        <Button x:Name="lock" Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right" 
+                Height="25" Width="120" Margin="0,185,10,0"
+                Content="Rögzítés" IsEnabled="{Binding Editing}"
+                Command="{Binding LockCommand}"/>
+        <Button x:Name="edit" Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Center" 
+                Height="25" Width="120" Margin="0,185,10,0"
+                Content="Szerkesztés" IsEnabled="{Binding Locking}"
+                Command="{Binding EditCommand}"/>
+        <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left"
+                   Text="{Binding ErrorMessage}" TextWrapping="Wrap" Foreground="Red"/>
     </Grid>
 </Window>

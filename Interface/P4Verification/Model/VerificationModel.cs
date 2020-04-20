@@ -10,6 +10,7 @@ namespace P4Verification.Model
         private string _inputString;
         private string _outputString;
         private List<String> _rules;
+        private string _errorString;
         public string InputString
         {
             get { return _inputString; }
@@ -33,22 +34,24 @@ namespace P4Verification.Model
             }
         }
 
-        public List<String> Rules
+        public string ErrorString
         {
-            get { return _rules; }
+            get { return _errorString; }
             private set
             {
-                if (_rules != value)
+                if (_errorString != value)
                 {
-                    _rules = value;
+                    _errorString = value;
                 }
             }
         }
+        
         public HaskellCalculation hscalculation { get; set; }
 
         public HaskellString hsstring { get; set; }
 
         public event EventHandler<CalculationEventArgs> CalculationDone;
+        public event EventHandler<ErrorEventArgs> Error;
         public VerificationModel() 
         {
             OutputString = "A végeredmény itt fog megjelenni.";
@@ -57,17 +60,47 @@ namespace P4Verification.Model
             hsstring = new HaskellString();
         }
 
-        public void Calculate(string input)
+        public void Calculate(string input, bool locking)
         {
-            InputString = input;
-//            OutputString = hsstring.CopyString(InputString);
-            OutputString = hscalculation.HsCalculate(InputString);
-            OnCalculationDone(OutputString);
+            if(locking)
+            {
+                if (input != null && input != "")
+                {
+                    InputString = input;
+                    //OutputString = hsstring.CopyString(InputString);
+                    OutputString = hscalculation.HsCalculate(InputString);
+                    OnCalculationDone(OutputString);
+                    ErrorString = "";
+                    OnNewError(ErrorString);
+                }
+                else
+                {
+                    InputString = input;
+                    OutputString = "";
+                    OnCalculationDone(OutputString);
+                    ErrorString = "Üres input.";
+                    OnNewError(ErrorString);
+
+                }
+            }
+            else
+            {
+                InputString = input;
+                OutputString = "";
+                OnCalculationDone(OutputString);
+                ErrorString = "A kiértékeléshez szükséges a feltételek rögzítése.";
+                OnNewError(ErrorString);
+            }
         }
 
         private void OnCalculationDone(string n)
         {
             CalculationDone?.Invoke(this, new CalculationEventArgs(n));
+        }
+
+        private void OnNewError(string n)
+        {
+            Error?.Invoke(this, new ErrorEventArgs(n));
         }
     }
 }

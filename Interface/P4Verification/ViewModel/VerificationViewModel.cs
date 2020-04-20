@@ -9,85 +9,71 @@ namespace P4Verification.ViewModel
     class VerificationViewModel : ViewModelBase
     {
         private VerificationModel Model;
-        private ObservableCollection<String> _stringRules;
-        private string _selectedStringRule;
-        private Rule _selectedFirst;
-        private string _selectedSecond;
-        private string _selectedThird;
-        private string _newStringRule;
         private string _errorMessage;
-        private bool _ruleMakerVisibility;
-        public Rule SelectedFirst
+        private int _selectedSelect;
+        private int _selectedTable;
+        private int _selectedAssignment;
+        private int _selectedSetHeader;
+        private int _selectedDrop;
+        private bool _locking;
+        private bool _editing;
+        public int SelectedSelect
         {
-            get { return _selectedFirst; }
+            get { return _selectedSelect; }
             set
             {
-                if (_selectedFirst != value)
+                if (_selectedSelect != value)
                 {
-                    _selectedFirst = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-        public string SelectedSecond
-        {
-            get { return _selectedSecond; }
-            set
-            {
-                if (_selectedSecond != value)
-                {
-                    _selectedSecond = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-        public string SelectedThird
-        {
-            get { return _selectedThird; }
-            set
-            {
-                if (_selectedThird != value)
-                {
-                    _selectedThird = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-        public ObservableCollection<Rule> Rules { get; set; }
-        public ObservableCollection<string> StringRules
-        {
-            get { return _stringRules; }
-            set
-            {
-                if (_stringRules != value)
-                {
-                    _stringRules = value;
+                    _selectedSelect = value;
                     OnPropertyChanged();
                 }
             }
         }
 
-        public string SelectedStringRule
+        public int SelectedTable
         {
-            get { return _selectedStringRule; }
+            get { return _selectedTable; }
             set
             {
-                if(_selectedStringRule != value)
+                if (_selectedTable != value)
                 {
-                    _selectedStringRule = value;
+                    _selectedTable = value;
                     OnPropertyChanged();
                 }
             }
         }
-
-        public string NewStringRule
+        public int SelectedAssignment
         {
-            get { return _newStringRule; }
+            get { return _selectedAssignment; }
             set
             {
-                if(_newStringRule != value)
+                if (_selectedAssignment != value)
                 {
-                    _newStringRule = value;
+                    _selectedAssignment = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+        public int SelectedSetHeader
+        {
+            get { return _selectedSetHeader; }
+            set
+            {
+                if (_selectedSetHeader != value)
+                {
+                    _selectedSetHeader = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+        public int SelectedDrop
+        {
+            get { return _selectedDrop; }
+            set
+            {
+                if (_selectedDrop != value)
+                {
+                    _selectedDrop = value;
                     OnPropertyChanged();
                 }
             }
@@ -106,19 +92,37 @@ namespace P4Verification.ViewModel
             }
         }
 
-        public bool RuleMakerVisibility
+        public bool Locking
         {
-            get { return _ruleMakerVisibility; }
+            get { return _locking; }
             set
             {
-                if (_ruleMakerVisibility != value)
+                if (_locking != value)
                 {
-                    _ruleMakerVisibility = value;
+                    _locking = value;
                     OnPropertyChanged();
                 }
             }
         }
 
+        public bool Editing
+        {
+            get { return _editing; }
+            set
+            {
+                if (_editing != value)
+                {
+                    _editing = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public SelectCondition SelectConds { get; set; }
+        public TableCondition TableConds { get; set; }
+        public AssignmentCondition AssignmentConds { get; set; }
+        public SetHeaderCondition SetHeaderConds { get; set; }
+        public DropCondition DropConds { get; set; }
         public string Output
         {
             get; set;
@@ -132,108 +136,60 @@ namespace P4Verification.ViewModel
 
         public DelegateCommand CalculateCommand { get; set; }
         public DelegateCommand ReadInputCommand { get; set; }
-        public DelegateCommand GenerateRuleCommand { get; set; }
-        public DelegateCommand AddRuleCommand { get; set; }
-        public DelegateCommand DeleteRuleCommand { get; set; }
+        public DelegateCommand LockCommand { get; set; }
+        public DelegateCommand EditCommand { get; set; }
         public VerificationViewModel(VerificationModel model)
         {
             Model = model;
 
-            Rules = new ObservableCollection<Rule>(new List<Rule>
-            {
-                new SequenceRule("Sequence"),
-                new SelectionRule("Selection"),
-                new TableRule("Table"),
-                new AssignmentRule("Assignment")
-            });
+            SelectConds = new SelectCondition();
+            TableConds = new TableCondition();
+            AssignmentConds = new AssignmentCondition();
+            SetHeaderConds = new SetHeaderCondition();
+            DropConds = new DropCondition();
 
-            StringRules = new ObservableCollection<string>();
-            RuleMakerVisibility = false;
+            SelectedSelect = 0;
+            SelectedTable = 0;
+            SelectedAssignment = 0;
+            SelectedDrop = 0;
+            SelectedSetHeader = 0;
+            SelectedDrop = 0;
+
+            Locking = false;
+            Editing = true;
 
             model.CalculationDone += new EventHandler<CalculationEventArgs>(Model_CalculationDone);
+            model.Error += new EventHandler<ErrorEventArgs>(Model_Error);
 
-            CalculateCommand = new DelegateCommand(param => Model.Calculate(Input));
+            CalculateCommand = new DelegateCommand(param => Model.Calculate(Input, Locking));
             ReadInputCommand = new DelegateCommand(param => OnReadInput());
-            GenerateRuleCommand = new DelegateCommand(param => GenerateRule());
-            AddRuleCommand = new DelegateCommand(param => AddRule());
-            DeleteRuleCommand = new DelegateCommand(param => DeleteRule());
-
+            LockCommand = new DelegateCommand(param => LockConditions());
+            EditCommand = new DelegateCommand(param => EditConditions());
         }
         private void Model_CalculationDone(object sender, CalculationEventArgs e)
         {
             this.Output = e.Result;
             OnPropertyChanged("Output");
         }
+
+        private void Model_Error(object sender, ErrorEventArgs e)
+        {
+            this.ErrorMessage = e.ErrorString;
+        }
         private void OnReadInput()
         {
             ReadInput?.Invoke(this, EventArgs.Empty);
         }
 
-        private void GenerateRule()
+        private void LockConditions()
         {
-            if(SelectedFirst == null || SelectedSecond == null || SelectedThird == null)
-            {
-                ErrorMessage = "Új szabály generálásához mind a három opció kiválasztására szükség van.";
-            }
-            else
-            {
-                ErrorMessage = "";
-                string tempRule = "";
-                switch (SelectedFirst.Name)
-                {
-                    case "Sequence":
-                        tempRule = tempRule + "seq ";
-                        break;
-                    case "Selection":
-                        tempRule = tempRule + "select ";
-                        break;
-                    case "Table":
-                        tempRule = tempRule + "table ";
-                        break;
-                    case "Assignment":
-                        tempRule = tempRule + "assign ";
-                        break;
-                }
-                tempRule = tempRule + "=>" + SelectedSecond + ", " + SelectedThird;
-                NewStringRule = tempRule;
-            }
+            Locking = true;
+            Editing = false;
         }
-
-        private void AddRule()
+        private void EditConditions()
         {
-            if(NewStringRule == null || NewStringRule == "")
-            {
-                ErrorMessage = "Új hozzáadásához előbb a szabály generálására van szükség.";
-            }
-            else
-            {
-                ErrorMessage = "";
-                StringRules.Add(NewStringRule);
-                NewStringRule = "";
-
-                Rules.Remove(SelectedFirst);
-            }
-        }
-
-        private void DeleteRule()
-        {
-            if(SelectedStringRule.Contains("seq"))
-            {
-                Rules.Add(new SequenceRule("Sequence"));
-            }
-            else if(SelectedStringRule.Contains("select"))
-            {
-                Rules.Add(new SelectionRule("Selection"));
-            }
-            else if (SelectedStringRule.Contains("table"))
-            {
-                Rules.Add(new TableRule("Table"));
-            }
-            else if (SelectedStringRule.Contains("assign"))
-            {
-                Rules.Add(new AssignmentRule("Assignment"));
-            }
-            StringRules.Remove(SelectedStringRule);
+            Locking = false;
+            Editing = true;
         }
     }
 }
