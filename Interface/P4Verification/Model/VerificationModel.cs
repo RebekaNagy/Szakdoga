@@ -65,10 +65,29 @@ namespace P4Verification.Model
                 if (input != null && input != "")
                 {
                     InputString = input;
-                    //OutputString = hsstring.CopyString(InputString);
-                    OutputString = hscalculation.HsCalculate(InputString, conds);
+                    string tmp = hscalculation.HsCalculate(InputString, conds);
+                    int index = tmp.IndexOf(':');
+                    if (index > 0)
+                    {
+                        string errortmp = tmp.Substring(0, index);
+                        if (errortmp == "NOERROR")
+                        {
+                            ErrorString = "";
+                            OutputString = tmp.Substring(index);
+                        }
+                        else
+                        {
+                            ErrorString = errortmp;
+                            OutputString = "";
+                        }
+                    }
+                    else
+                    {
+                        ErrorString = "Ismeretlen hiba.";
+                        OutputString = "";
+                    }
+
                     OnCalculationDone(OutputString);
-                    ErrorString = "";
                     OnNewError(ErrorString);
                 }
                 else
