@@ -11,7 +11,7 @@ type Field = (String, Validity)
 
 type Header = (String, (Validity, [Field]))
 
-data Environment = Env [Header] | EnvError deriving (Show, Eq)
+data Environment = Env [Header] | EnvError | Contradiction deriving (Show, Eq)
 
 data Program =
     EmptyProg
@@ -78,21 +78,24 @@ prFunc_Skip envlist = envlist
 
 prFunc_Drop :: [Environment] -> SideCondition -> [Environment]
 prFunc_Drop envlist (SideCon (_, _, _, _, dropCondition)) =
-    map (\(Env env) -> 
-        if (check_Drop (Env env) dropCondition) then Env (map (\h@(header, (validity, fields)) -> 
-            if header == "drop" then (header, (Valid, fields)) else h) env) else (Env env)) envlist
+    map (\environment -> case environment of
+        Contradiction -> Contradiction
+        (Env env) -> if (check_Drop (Env env) dropCondition) then Env (map (\h@(header, (validity, fields)) -> 
+            if header == "drop" then (header, (Valid, fields)) else h) env) else (Contradiction)) envlist
 
 prFunc_SetHeaderValidity :: [Environment] -> String -> Validity -> SideCondition -> [Environment]
 prFunc_SetHeaderValidity envlist header validity (SideCon (_, _, _, setHeaderCondition, _)) =
-    map (\(Env env) -> 
-            if (check_SetHeader (Env env) setHeaderCondition header) then Env (map (\h@(header', (validity', fields)) -> 
-                if header == header' then (header, (validity, fields)) else h) env) else (Env env)) envlist
+    map (\environment -> case environment of
+        Contradiction -> Contradiction
+        (Env env) -> if (check_SetHeader (Env env) setHeaderCondition header) then Env (map (\h@(header', (validity', fields)) -> 
+                if header == header' then (header, (validity, fields)) else h) env) else (Contradiction)) envlist
 
 prFunc_Assignment :: [Environment] -> String -> [String] -> SideCondition -> [Environment]
 prFunc_Assignment envlist left rights (SideCon (_, _, assignmentCondition, _, _)) = 
-    map (\(Env env) -> 
-        if (check_Assignment (Env env) assignmentCondition left rights) then Env (map (\h@(header, (validity, fields)) -> 
-            if header == left then (header, (Valid, fields)) else helper_Assignment h left) env) else (Env env)) envlist
+    map (\environment -> case environment of
+        Contradiction -> Contradiction
+        (Env env) -> if (check_Assignment (Env env) assignmentCondition left rights) then Env (map (\h@(header, (validity, fields)) -> 
+            if header == left then (header, (Valid, fields)) else helper_Assignment h left) env) else (Contradiction)) envlist
 
 helper_Assignment :: Header -> String -> Header
 helper_Assignment (headerName, (headerValidity, fields)) name = 
@@ -103,14 +106,24 @@ prFunc_Action envlist program sideconditions = verifyP4 envlist program sidecond
 
 prFunc_If :: [Environment] -> [String] -> Program -> Program -> SideCondition -> [Environment]
 prFunc_If envlist conditions ifprogram elseprogram sideconditions@(SideCon (ifCondition, _, _, _, _)) = 
-    (verifyP4 envlist ifprogram sideconditions) ++ (verifyP4 envlist elseprogram sideconditions)
+    (verifyP4 (map (\environment -> case environment of
+                        Contradiction -> Contradiction
+                        (Env env) -> if (check_If (Env env) ifCondition conditions) then (Env env) else Contradiction) envlist) ifprogram sideconditions) 
+                        ++ 
+    (verifyP4 (map (\environment -> case environment of
+                        Contradiction -> Contradiction
+                        (Env env) -> if (check_If (Env env) ifCondition conditions) then (Env env) else Contradiction) envlist) elseprogram sideconditions)
 
 prFunc_Seq :: [Environment] -> Program -> Program -> SideCondition -> [Environment]
 prFunc_Seq envlist firstprogram secondprogram sideconditions = verifyP4 (verifyP4 envlist firstprogram sideconditions) secondprogram sideconditions
 
 prFunc_Table :: [Environment] -> [String] -> [Program] -> SideCondition -> [Environment]
 prFunc_Table envlist keys [] sideconditions@(SideCon (_, tableCondition, _, _, _)) = []
-prFunc_Table envlist keys (action:acts) sideconditions = (verifyP4 envlist action sideconditions) ++ (prFunc_Table envlist keys acts sideconditions) 
+prFunc_Table envlist keys (action:acts) sideconditions@(SideCon (_, tableCondition, _, _, _)) = 
+    (verifyP4 newEnvlist action sideconditions) ++ (prFunc_Table newEnvlist keys acts sideconditions) 
+    where newEnvlist = (map (\environment -> case environment of
+                        Contradiction -> Contradiction
+                        (Env env) -> if (check_Table (Env env) tableCondition keys) then (Env env) else Contradiction) envlist)
 
 ------------------------------------- CHECKING FUNCTIONS
 
@@ -230,7 +243,7 @@ initRules = [
         ]
 
 empSideCons :: SideCondition
-empSideCons = SideCon (NoneIf, NoneTable, RightValid, FieldsInvalid, EveryHeaderValid)
+empSideCons = SideCon (NoneIf, NoneTable, NoneAssignment, NoneSetHeader, NoneDrop)
 
 exampleEnv :: [Environment]
 exampleEnv = [Env [
