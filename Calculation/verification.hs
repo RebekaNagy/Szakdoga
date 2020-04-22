@@ -1,6 +1,9 @@
 module Verification where
 import Data.String
 import Data.List
+import System.IO
+import System.Environment
+import Debug.Trace
 ------------------------------------- TYPES
 data Validity =  
     Valid
@@ -69,8 +72,17 @@ data DropCondition =
 
 type Rule = [Environment] -> Program -> SideCondition -> [Environment]
 ------------------------------------- MAIN VERIFICATION FUNCTION
-verifyP4 :: [Environment] -> Program -> SideCondition -> [Environment]
-verifyP4 environmentList program sideconditions = (fittingRule environmentList program sideconditions initRules) environmentList program sideconditions
+
+verifyP4 :: [Environment] -> Program -> SideCondition -> (IO (), [Environment])
+verifyP4 environmentList program sideconditions = 
+    ((writeOutEnvironment environmentList), ((fittingRule environmentList program sideconditions initRules) environmentList program sideconditions))
+
+writeOutEnvironment :: [Environment] -> IO ()
+writeOutEnvironment environmentList = do
+    appendFile "envs.txt" ((show environmentList)++"\n")
+    return ()
+--writeOutEnvironment exampleEnv
+
 ------------------------------------- PROGRAM FUNCTIONS
 
 prFunc_Skip :: [Environment] -> [Environment]
@@ -102,25 +114,25 @@ helper_Assignment (headerName, (headerValidity, fields)) name =
     (headerName, (headerValidity, (map (\field@(fieldName, fieldValidity) -> if fieldName == name then (fieldName, Valid) else field) fields)))
 
 prFunc_Action :: [Environment] -> Program -> SideCondition -> [Environment]
-prFunc_Action envlist program sideconditions = verifyP4 envlist program sideconditions
+prFunc_Action envlist program sideconditions = snd (verifyP4 envlist program sideconditions)
 
 prFunc_If :: [Environment] -> [String] -> Program -> Program -> SideCondition -> [Environment]
 prFunc_If envlist conditions ifprogram elseprogram sideconditions@(SideCon (ifCondition, _, _, _, _)) = 
-    (verifyP4 (map (\environment -> case environment of
+    snd (verifyP4 (map (\environment -> case environment of
                         Contradiction -> Contradiction
                         (Env env) -> if (check_If (Env env) ifCondition conditions) then (Env env) else Contradiction) envlist) ifprogram sideconditions) 
                         ++ 
-    (verifyP4 (map (\environment -> case environment of
+    snd (verifyP4 (map (\environment -> case environment of
                         Contradiction -> Contradiction
                         (Env env) -> if (check_If (Env env) ifCondition conditions) then (Env env) else Contradiction) envlist) elseprogram sideconditions)
 
 prFunc_Seq :: [Environment] -> Program -> Program -> SideCondition -> [Environment]
-prFunc_Seq envlist firstprogram secondprogram sideconditions = verifyP4 (verifyP4 envlist firstprogram sideconditions) secondprogram sideconditions
+prFunc_Seq envlist firstprogram secondprogram sideconditions = snd (verifyP4 (snd (verifyP4 envlist firstprogram sideconditions)) secondprogram sideconditions)
 
 prFunc_Table :: [Environment] -> [String] -> [Program] -> SideCondition -> [Environment]
 prFunc_Table envlist keys [] sideconditions@(SideCon (_, tableCondition, _, _, _)) = []
 prFunc_Table envlist keys (action:acts) sideconditions@(SideCon (_, tableCondition, _, _, _)) = 
-    (verifyP4 newEnvlist action sideconditions) ++ (prFunc_Table newEnvlist keys acts sideconditions) 
+    snd (verifyP4 newEnvlist action sideconditions) ++ (prFunc_Table newEnvlist keys acts sideconditions) 
     where newEnvlist = (map (\environment -> case environment of
                         Contradiction -> Contradiction
                         (Env env) -> if (check_Table (Env env) tableCondition keys) then (Env env) else Contradiction) envlist)
@@ -260,3 +272,6 @@ exampleHeader = [
         ("drop", (Invalid, [])), 
         ("ipv4", (Valid, [("ipv4.dstAddr", Valid),("ipv4.srcAddr", Valid)])),
         ("ethernet", (Valid, [("ethernet.field1", Valid),("ethernet.field2", Valid)]))]
+
+exampleProg :: Program
+exampleProg = Skip
