@@ -226,9 +226,9 @@ assignmentConversion (Divide arith1 arith2) = (assignmentConversion arith1) ++ (
 
 functionConversion :: FunctionExpression -> Program
 functionConversion (FuncVar name) = ProgError
-functionConversion (Count (FuncVar name)) = SetHeaderValidity name Valid
-functionConversion (SetValid (FuncVar name)) = SetHeaderValidity name Valid
-functionConversion (SetInvalid (FuncVar name)) = SetHeaderValidity name Invalid
+functionConversion (Count (FuncVar name)) = SetHeaderValidity (drop 1 (dropWhile (/= '.') name)) Valid
+functionConversion (SetValid (FuncVar name)) = SetHeaderValidity (drop 1 (dropWhile (/= '.') name)) Valid
+functionConversion (SetInvalid (FuncVar name)) = SetHeaderValidity (drop 1 (dropWhile (/= '.') name)) Invalid
 
 ------------------------------------- TABLE CONVERSION FUNCTIONS
 tableConversion :: Statement -> ([Program], [Program], [Program]) -> ([Program], [Program], [Program])
