@@ -6,25 +6,25 @@ import Verification
 
 ------------------------------------- MAIN CONVERSION FUNCTIONS
 
-mainConversion :: [Statement] -> (([Environment], Environment), ([Program], [Program], [Program]))-> (([Environment], Environment), Program)
+mainConversion :: [Statement] -> (([Environment], Environment), ([Program], [Program], [Program]))-> (([IdEnvironment], [Environment]), Program)
 mainConversion [] ((init, final), (actions, tables, prog)) =
     case filteredProgram of
-        [] -> ((init, final), EmptyProg)
-        _ -> ((init, final), (listToProgram filteredProgram))
+        [] -> (((envToIdEnv init 0), finalizeFinal final), EmptyProg)
+        _ -> (((envToIdEnv init 0), finalizeFinal final), (listToProgram filteredProgram))
     where filteredProgram = (filter (\x -> x /= Skip) prog)
 mainConversion (x:xs) ((init, final), (actions, tables, prog)) =
     case initEnvValid init of
-        False -> (([EnvError], EnvError), ProgError)
+        False -> (([("", "", Stuck, EnvError)], [EnvError]), ProgError)
         True -> case final of
-            EnvError -> (([EnvError], EnvError), ProgError)
+            EnvError -> (([("", "", Stuck, EnvError)], [EnvError]), ProgError)
             _ -> case prog of
-                [ProgError] -> ((init, final), ProgError)
+                [ProgError] -> (((envToIdEnv init 0), finalizeFinal final), ProgError)
                 _ -> case x of
                     ParserHeader name fields -> mainConversion xs ((headerConversion x (init, final)), (actions, tables, prog))
                     ParserStruct sname sfields -> mainConversion xs ((headerConversion x (init, final)), (actions, tables, prog))
                     Parser block -> mainConversion xs (((parserConversion x init), final), (actions, tables, prog))
                     Control cname cblock -> mainConversion xs (controlConversion cblock ((init, final), (actions, tables, prog)))
-                    Error -> ((init, final), ProgError)
+                    Error -> (((envToIdEnv init 0), finalizeFinal final), ProgError)
                     _ -> mainConversion xs ((init, final), (actions, tables, prog))
 
 ------------------------------------- HEADER CONVERSION FUNCTIONS
@@ -391,6 +391,22 @@ initEnvValid (env:xs) =
         EnvError -> False
         _ -> initEnvValid xs
 
+envToIdEnv :: [Environment] -> Int -> [IdEnvironment]
+envToIdEnv [] number = []
+envToIdEnv ((env):xs) number = ((show number), (show number), NoMatch, env) : envToIdEnv xs (number + 1) 
+
+finalizeFinal :: Environment -> [Environment]
+finalizeFinal (Env env) = (Env env) : (dropEnv (Env env)) : []
+
+dropEnv :: Environment -> Environment
+dropEnv (Env env) = 
+    Env (map (\(headerName, (headerValidity, fields)) -> 
+        if headerName == "drop" then (headerName, (Valid, fields)) else (headerName, (Undefined, everyFieldUndifed fields))) env)
+
+everyFieldUndifed :: [Field] -> [Field]
+everyFieldUndifed [] = []
+everyFieldUndifed ((fieldName, fieldValidity):xs) = (fieldName, Undefined) : everyFieldUndifed xs
+
 ------------------------------------- VARIABLES
 
 initEnv :: [Environment]
@@ -432,7 +448,6 @@ envListToString (x:xs) = (envToString x) ++ "\n" ++ (envListToString xs)
 envToString :: Environment -> String
 envToString (Env []) = ""
 envToString (Env (x:xs)) = headerToString x ++ "\n" ++ (envToString (Env xs))
-envToString (Contradiction) = "Contradiction\n"
 
 headerToString :: Header -> String
 headerToString (header, (validity, fields)) = "fejléc: (" ++ header ++ ", " ++ (validityToString validity) ++ ")\n mezők:" ++ fieldsToString fields

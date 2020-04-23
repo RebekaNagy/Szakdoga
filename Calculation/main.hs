@@ -13,18 +13,18 @@ main = do
     mapM print result
     putStrLn ""
     let out = mainConversion result ((initEnv, finalEnv), (initActions, initTables, initProg))
-    let first = fst out
-    let second = snd out
-    let strprog = dataToString second
-    let verifyenv = (verifyP4 (fst first) second empSideCons)
+    let envs = fst out
+    let prog = snd out
+    let strprog = dataToString prog
+    let verifyenv = (verifyP4 (fst envs) prog empSideCons)
     putStrLn "Initial:"
-    mapM print (fst first)
+    mapM print (fst envs)
     putStrLn ""
     putStrLn "Final:"
-    print (snd first)
+    print (snd envs)
     putStrLn ""
     putStrLn "Program:"
-    print second
+    print prog
     putStrLn ""
     putStrLn "Program as string:"
     putStr strprog

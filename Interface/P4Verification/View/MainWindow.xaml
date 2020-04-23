@@ -3,116 +3,117 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:graphsharp="clr-namespace:GraphSharp.Controls;assembly=GraphSharp.Controls"
+        xmlns:zoom="clr-namespace:WPFExtensions.Controls;assembly=WPFExtensions"
         xmlns:local="clr-namespace:P4Verification"
         mc:Ignorable="d"
-        Title="P4 programok verifikációja" Height="500" Width="1000">
+        Title="P4 programok verifikációja" Height="800" Width="1000">
     <Grid x:Name="mgrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
             <ColumnDefinition/>
+            <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <Grid Grid.Column="0">
-            <Grid.RowDefinitions>
-                <RowDefinition/>
-                <RowDefinition/>
-            </Grid.RowDefinitions>
-            <Label Grid.Row="0" Margin="10,9,250,0" 
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Label Grid.Row="0" Margin="10,9,187.2,0" 
                Content="Input betöltése fájlból:" 
                Height="26" 
                VerticalAlignment="Top"/>
-            <Button Grid.Row="0" Command="{Binding ReadInputCommand}" 
-                Margin="205,5,0,0" Height="30" 
-                VerticalAlignment="Top" 
-                Content="Fájl megnyitása" HorizontalAlignment="Left" Width="140"/>
-            <TextBox Grid.Row="0" Text="{Binding Input}" 
-                 Width="350" Margin="10,40,0,10"
-                 HorizontalAlignment="Left" 
-                 VerticalScrollBarVisibility="Auto" 
-                 HorizontalScrollBarVisibility="Auto" 
-                 BorderThickness="3,3,3,3" 
-                 AcceptsReturn="True" 
-                 AcceptsTab="True"
-                 Background="#FFD4D4D4" />
-            <Grid Grid.Column="0" Grid.Row="1" Height="180" VerticalAlignment="Top">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
-                <Label Grid.Row="0" Grid.Column="0" Content="Szabályok"
+        <Button Grid.Row="0" Command="{Binding ReadInputCommand}" 
+            Margin="165,5,0,0" Height="30" 
+            VerticalAlignment="Top" 
+            Content="Fájl megnyitása" HorizontalAlignment="Left" Width="140"/>
+        <TextBox Grid.Row="0" Text="{Binding Input}" 
+                Width="311" Margin="10,40,0,10.2"
+                HorizontalAlignment="Left" 
+                VerticalScrollBarVisibility="Auto" 
+                HorizontalScrollBarVisibility="Auto" 
+                BorderThickness="3,3,3,3" 
+                AcceptsReturn="True" 
+                AcceptsTab="True"
+                Background="#FFD4D4D4" />
+        <Grid Grid.Column="1" Grid.Row="0" Height="180" VerticalAlignment="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Label Grid.Row="0" Grid.Column="0" Content="Szabályok"
                    VerticalAlignment="Center" VerticalContentAlignment="Center"
                    HorizontalAlignment="Center" HorizontalContentAlignment="Center" FontSize="14"/>
-                <Label Grid.Row="0" Grid.Column="1" Content="Feltételek" 
+            <Label Grid.Row="0" Grid.Column="1" Content="Feltételek" 
                    VerticalAlignment="Center" VerticalContentAlignment="Center"
                    HorizontalAlignment="Center" HorizontalContentAlignment="Center" FontSize="14"/>
-                <Label Grid.Row="1" Grid.Column="0" Content="Elágazás (if)" 
+            <Label Grid.Row="1" Grid.Column="0" Content="Elágazás (if)" 
                    VerticalAlignment="Center" VerticalContentAlignment="Center"
                    HorizontalAlignment="Center" HorizontalContentAlignment="Center"/>
-                <Label Grid.Row="2" Grid.Column="0" Content="Tábla (table)" 
+            <Label Grid.Row="2" Grid.Column="0" Content="Tábla (table)" 
                    VerticalAlignment="Center" VerticalContentAlignment="Center"
                    HorizontalAlignment="Center" HorizontalContentAlignment="Center"/>
-                <Label Grid.Row="3" Grid.Column="0" Content="Értékadás" 
+            <Label Grid.Row="3" Grid.Column="0" Content="Értékadás" 
                    VerticalAlignment="Center" VerticalContentAlignment="Center"
                    HorizontalAlignment="Center" HorizontalContentAlignment="Center"/>
-                <Label Grid.Row="4" Grid.Column="0" Content="Fejléc validitás (setValid, setInvalid)" 
+            <Label Grid.Row="4" Grid.Column="0" Content="Fejléc validitás (setValid, setInvalid)" 
                    VerticalAlignment="Center" VerticalContentAlignment="Center"
                    HorizontalAlignment="Center" HorizontalContentAlignment="Center"/>
-                <Label Grid.Row="5" Grid.Column="0" Content="Fejlécek elvetése (drop)" 
+            <Label Grid.Row="5" Grid.Column="0" Content="Fejlécek elvetése (drop)" 
                    VerticalAlignment="Center" VerticalContentAlignment="Center"
                    HorizontalAlignment="Center" HorizontalContentAlignment="Center"/>
-                <ComboBox Name="elagazas" Grid.Column="1" Grid.Row="1"
+            <ComboBox Name="elagazas" Grid.Column="1" Grid.Row="1"
                       VerticalAlignment="Center" IsEnabled="{Binding Editing}"
                       ItemsSource="{Binding SelectConds.ConditionOptions}"
                       SelectedIndex="{Binding SelectedSelect}"/>
-                <ComboBox x:Name="tabla" Grid.Column="1" Grid.Row="2"
+            <ComboBox x:Name="tabla" Grid.Column="1" Grid.Row="2"
                       VerticalAlignment="Center" IsEnabled="{Binding Editing}"
                       ItemsSource="{Binding TableConds.ConditionOptions}"
                       SelectedIndex="{Binding SelectedTable}"/>
-                <ComboBox Name="ertekadas" Grid.Column="1" Grid.Row="3"
+            <ComboBox Name="ertekadas" Grid.Column="1" Grid.Row="3"
                       VerticalAlignment="Center" IsEnabled="{Binding Editing}"
                       ItemsSource="{Binding AssignmentConds.ConditionOptions}"
                       SelectedIndex="{Binding SelectedAssignment}"/>
-                <ComboBox Name="fejlecvaliditas" Grid.Column="1" Grid.Row="4"
+            <ComboBox Name="fejlecvaliditas" Grid.Column="1" Grid.Row="4"
                       VerticalAlignment="Center" IsEnabled="{Binding Editing}"
                       ItemsSource="{Binding SetHeaderConds.ConditionOptions}"
                       SelectedIndex="{Binding SelectedSetHeader}"/>
-                <ComboBox Name="fejlecelvetes" Grid.Column="1" Grid.Row="5"
+            <ComboBox Name="fejlecelvetes" Grid.Column="1" Grid.Row="5"
                       VerticalAlignment="Center" IsEnabled="{Binding Editing}"
                       ItemsSource="{Binding DropConds.ConditionOptions}"
                       SelectedIndex="{Binding SelectedDrop}"/>
-            </Grid>
-            <Button x:Name="lock" Grid.Column="0" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Right" 
-                Height="25" Width="120" Margin="0,185,10,0"
-                Content="Rögzítés" IsEnabled="{Binding Editing}"
-                Command="{Binding LockCommand}"/>
-            <Button x:Name="edit" Grid.Column="0" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Center" 
-                Height="25" Width="120" Margin="0,185,10,0"
-                Content="Szerkesztés" IsEnabled="{Binding Locking}"
-                Command="{Binding EditCommand}"/>
         </Grid>
-        <TextBlock Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Left"
+        <Button x:Name="lock" Grid.Column="1" Grid.Row="0" VerticalAlignment="Top" HorizontalAlignment="Right" 
+            Height="25" Width="120" Margin="0,185,10,0"
+            Content="Rögzítés" IsEnabled="{Binding Editing}"
+            Command="{Binding LockCommand}"/>
+        <Button x:Name="edit" Grid.Column="1" Grid.Row="0" VerticalAlignment="Top" HorizontalAlignment="Center" 
+            Height="25" Width="120" Margin="59.8,185,151.4,0"
+            Content="Szerkesztés" IsEnabled="{Binding Locking}"
+            Command="{Binding EditCommand}"/>
+        <TextBlock Grid.Column="1" Grid.Row="0" VerticalAlignment="Bottom" HorizontalAlignment="Left"
                    Text="{Binding ErrorMessage}" TextWrapping="Wrap" Foreground="Red"/>
-        <Label Grid.Column="1" 
+        <Label Grid.Column="2" 
                Margin="10,47,0,0" 
                HorizontalAlignment="Left" 
                Width="108" Height="25" 
                VerticalAlignment="Top" 
                Content="Eredmény"/>
         <Button Command="{Binding CalculateCommand}" 
-                Grid.Column="1"
+                Grid.Column="2"
                 Width="140" Height="30" 
                 Margin="85,45,0,0" 
                 VerticalAlignment="Top" 
                 HorizontalAlignment="Left" 
                 Content="Verifikáció"></Button>
-        <ScrollViewer Grid.Column="1"
+        <ScrollViewer Grid.Column="2"
                       Margin="25,80,10,30">
             <TextBlock Text="{Binding Output}" 
                        Grid.Column="1" 
@@ -123,6 +124,13 @@
                        HorizontalAlignment="Left" 
                        TextWrapping="Wrap" />
         </ScrollViewer>
-
+        <zoom:ZoomControl Grid.Column="0" Grid.Row="1"
+                      Margin="10,10.4,9.6,10.4" Grid.ColumnSpan="3">
+            <graphsharp:GraphLayout x:Name="graphLayout"
+                                    Graph="{Binding GraphToVisualize}"
+                                    LayoutAlgorithmType="Tree"
+                                    OverlapRemovalAlgorithmType="FSA"
+                                    HighlightAlgorithmType="Simple"/>
+        </zoom:ZoomControl>
     </Grid>
 </Window>

@@ -15,7 +15,11 @@ type Field = (String, Validity)
 
 type Header = (String, (Validity, [Field]))
 
-data Environment = Env [Header] | EnvError | Contradiction deriving (Show, Eq)
+type IdEnvironment = (String, String, EnvType, Environment)
+
+data EnvType = Match | NoMatch | Stuck deriving (Show, Eq)
+
+data Environment = Env [Header] | EnvError deriving (Show, Eq)
 
 data Program =
     EmptyProg
@@ -72,70 +76,70 @@ data DropCondition =
     | EveryFieldInvalid 
     | DropError deriving (Show, Eq)
 
-type Rule = [Environment] -> Program -> SideCondition -> [Environment]
+type Rule = [IdEnvironment] -> Program -> SideCondition -> [IdEnvironment]
 ------------------------------------- MAIN VERIFICATION FUNCTION
 
-verifyP4 :: [Environment] -> Program -> SideCondition -> [Environment]
+verifyP4 :: [IdEnvironment] -> Program -> SideCondition -> [IdEnvironment]
 verifyP4 environmentList program sideconditions = ((fittingRule environmentList program sideconditions initRules) environmentList program sideconditions)
 --writeOutEnvironment exampleEnv
 
 ------------------------------------- PROGRAM FUNCTIONS
 
-prFunc_Skip :: [Environment] -> [Environment]
+prFunc_Skip :: [IdEnvironment] -> [IdEnvironment]
 prFunc_Skip envlist = envlist
 
-prFunc_Drop :: [Environment] -> SideCondition -> [Environment]
+prFunc_Drop :: [IdEnvironment] -> SideCondition -> [IdEnvironment]
 prFunc_Drop envlist (SideCon (_, _, _, _, dropCondition)) =
-    map (\environment -> case environment of
-        Contradiction -> Contradiction
-        (Env env) -> if (check_Drop (Env env) dropCondition) then Env (map (\h@(header, (validity, fields)) -> 
-            if header == "drop" then (header, (Valid, fields)) else h) env) else (Contradiction)) envlist
+    map (\(parent, id, envtype, (Env env)) -> case envtype of
+        Stuck -> (parent, id, envtype, (Env env))
+        _ -> if (check_Drop (Env env) dropCondition) then (id, id++"&drop", NoMatch, Env (map (\h@(header, (validity, fields)) -> 
+            if header == "drop" then (header, (Valid, fields)) else h) env)) else (parent, id, Stuck, (Env env))) envlist
 
-prFunc_SetHeaderValidity :: [Environment] -> String -> Validity -> SideCondition -> [Environment]
+prFunc_SetHeaderValidity :: [IdEnvironment] -> String -> Validity -> SideCondition -> [IdEnvironment]
 prFunc_SetHeaderValidity envlist header validity (SideCon (_, _, _, setHeaderCondition, _)) =
-    map (\environment -> case environment of
-        Contradiction -> Contradiction
-        (Env env) -> if (check_SetHeader (Env env) setHeaderCondition header) then Env (map (\h@(header', (validity', fields)) -> 
-                if header == header' then (header, (validity, helper_SetHeaderValidity fields)) else h) env) else (Contradiction)) envlist
+    map (\(parent, id, envtype, (Env env)) -> case envtype of
+        Stuck -> (parent, id, envtype, (Env env))
+        _ -> if (check_SetHeader (Env env) setHeaderCondition header) then (id, id++"&setHeader", NoMatch, Env (map (\h@(header', (validity', fields)) -> 
+                if header == header' then (header, (validity, helper_SetHeaderValidity fields)) else h) env)) else (parent, id, Stuck, (Env env))) envlist
 
 helper_SetHeaderValidity :: [Field] -> [Field]
 helper_SetHeaderValidity [] = []
 helper_SetHeaderValidity ((fieldName, fieldValidity):xs) = (fieldName, Invalid) : helper_SetHeaderValidity xs
 
-prFunc_Assignment :: [Environment] -> String -> [String] -> SideCondition -> [Environment]
+prFunc_Assignment :: [IdEnvironment] -> String -> [String] -> SideCondition -> [IdEnvironment]
 prFunc_Assignment envlist left rights (SideCon (_, _, assignmentCondition, _, _)) = 
-    map (\environment -> case environment of
-        Contradiction -> Contradiction
-        (Env env) -> if (check_Assignment (Env env) assignmentCondition left rights) then Env (map (\h@(header, (validity, fields)) -> 
-            if header == left then (header, (Valid, fields)) else helper_Assignment h left) env) else (Contradiction)) envlist
+    map (\(parent, id, envtype, (Env env)) -> case envtype of
+        Stuck -> (parent, id, envtype, (Env env))
+        _ -> if (check_Assignment (Env env) assignmentCondition left rights) then (id, id++"&assignment", NoMatch, Env (map (\h@(header, (validity, fields)) -> 
+            if header == left then (header, (Valid, fields)) else helper_Assignment h left) env)) else (parent, id, Stuck, (Env env))) envlist
 
 helper_Assignment :: Header -> String -> Header
 helper_Assignment (headerName, (headerValidity, fields)) name = 
     (headerName, (headerValidity, (map (\field@(fieldName, fieldValidity) -> if fieldName == name then (fieldName, Valid) else field) fields)))
 
-prFunc_Action :: [Environment] -> Program -> SideCondition -> [Environment]
-prFunc_Action envlist program sideconditions = (verifyP4 envlist program sideconditions)
+prFunc_Action :: [IdEnvironment] -> String -> Program -> SideCondition -> [IdEnvironment]
+prFunc_Action envlist name program sideconditions = (verifyP4 (map (\(parent, id, envtype, env) -> (id, id++"&action:"++name, envtype, env)) envlist) program sideconditions)
 
-prFunc_If :: [Environment] -> [String] -> Program -> Program -> SideCondition -> [Environment]
+prFunc_If :: [IdEnvironment] -> [String] -> Program -> Program -> SideCondition -> [IdEnvironment]
 prFunc_If envlist conditions ifprogram elseprogram sideconditions@(SideCon (ifCondition, _, _, _, _)) = 
-    (verifyP4 (map (\environment -> case environment of
-                        Contradiction -> Contradiction
-                        (Env env) -> if (check_If (Env env) ifCondition conditions) then (Env env) else Contradiction) envlist) ifprogram sideconditions) 
+    (verifyP4 (map (\(parent, id, envtype, env) -> case envtype of
+                        Stuck -> (parent, id, envtype, env)
+                        _ -> if (check_If env ifCondition conditions) then (id, id++"&if", NoMatch, env) else (parent, id, Stuck, env)) envlist) ifprogram sideconditions) 
                         ++ 
-    (verifyP4 (map (\environment -> case environment of
-                        Contradiction -> Contradiction
-                        (Env env) -> if (check_If (Env env) ifCondition conditions) then (Env env) else Contradiction) envlist) elseprogram sideconditions)
+    (verifyP4 (map (\(parent, id, envtype, env) -> case envtype of
+                        Stuck -> (parent, id, envtype, env)
+                        _ -> if (check_If env ifCondition conditions) then (id, id++"&else", NoMatch, env) else (parent, id, Stuck, env)) envlist) elseprogram sideconditions)
 
-prFunc_Seq :: [Environment] -> Program -> Program -> SideCondition -> [Environment]
+prFunc_Seq :: [IdEnvironment] -> Program -> Program -> SideCondition -> [IdEnvironment]
 prFunc_Seq envlist firstprogram secondprogram sideconditions = (verifyP4 ((verifyP4 envlist firstprogram sideconditions)) secondprogram sideconditions)
 
-prFunc_Table :: [Environment] -> [String] -> [Program] -> SideCondition -> [Environment]
+prFunc_Table :: [IdEnvironment] -> [String] -> [Program] -> SideCondition -> [IdEnvironment]
 prFunc_Table envlist keys [] sideconditions@(SideCon (_, tableCondition, _, _, _)) = []
 prFunc_Table envlist keys (action:acts) sideconditions@(SideCon (_, tableCondition, _, _, _)) = 
-    (verifyP4 newEnvlist action sideconditions) ++ (prFunc_Table newEnvlist keys acts sideconditions) 
-    where newEnvlist = (map (\environment -> case environment of
-                        Contradiction -> Contradiction
-                        (Env env) -> if (check_Table (Env env) tableCondition keys) then (Env env) else Contradiction) envlist)
+    (verifyP4 newEnvlist action sideconditions) ++ (prFunc_Table envlist keys acts sideconditions) 
+    where newEnvlist = (map (\(parent, id, envtype, env) -> case envtype of
+                        Stuck -> (parent, id, envtype, env)
+                        _ -> if (check_Table env tableCondition keys) then (id, id++"&table:", NoMatch, env) else (parent, id, Stuck, env)) envlist)
 
 ------------------------------------- CHECKING FUNCTIONS
 
@@ -190,10 +194,10 @@ check_If (Env env) ifCondition conditions =
 getListValidity :: Environment -> [String] -> Validity -> Bool
 getListValidity environment list validity = and (map (\elem -> if (getValidity elem environment) == validity then True else False) list)
 
-fittingRule :: [Environment] -> Program -> SideCondition -> [Rule] -> Rule
+fittingRule :: [IdEnvironment] -> Program -> SideCondition -> [Rule] -> Rule
 fittingRule envlist program sideconditions [] = (\env ProgError sideconditions -> prFunc_Skip envlist)
 fittingRule envlist program sideconditions (rule:xs) 
-    | rule envlist program sideconditions == [EnvError] = fittingRule envlist program sideconditions xs
+    | rule envlist program sideconditions == [("", "", Stuck, EnvError)] = fittingRule envlist program sideconditions xs
     | otherwise = rule
 
 getHeaderValidity :: String -> Environment -> Validity
@@ -232,28 +236,28 @@ initRules :: [Rule]
 initRules = [
         (\environmentList program sideconditions -> case program of
                 Drop -> prFunc_Drop environmentList sideconditions
-                _ -> [EnvError]),
+                _ -> [("", "", Stuck, EnvError)]),
         (\environmentList program sideconditions -> case program of
                 Skip -> prFunc_Skip environmentList
-                _ -> [EnvError]),
+                _ -> [("", "", Stuck, EnvError)]),
         (\environmentList program sideconditions -> case program of
                 SetHeaderValidity str v -> (prFunc_SetHeaderValidity environmentList str v sideconditions)
-                _ -> [EnvError]),
+                _ -> [("", "", Stuck, EnvError)]),
         (\environmentList program sideconditions -> case program of
                 Assignment str strs -> (prFunc_Assignment environmentList str strs sideconditions)
-                _ -> [EnvError]),
+                _ -> [("", "", Stuck, EnvError)]),
         (\environmentList program sideconditions -> case program of
-                ActCons str pr -> prFunc_Action environmentList pr sideconditions
-                _ -> [EnvError]),
+                ActCons str pr -> prFunc_Action environmentList str pr sideconditions
+                _ -> [("", "", Stuck, EnvError)]),
         (\environmentList program sideconditions -> case program of
                 If str pr1 pr2 -> prFunc_If environmentList str pr1 pr2 sideconditions
-                _ -> [EnvError]),
+                _ -> [("", "", Stuck, EnvError)]),
         (\environmentList program sideconditions -> case program of
                 Seq pr1 pr2 -> prFunc_Seq environmentList pr1 pr2 sideconditions
-                _ -> [EnvError]),
+                _ -> [("", "", Stuck, EnvError)]),
         (\environmentList program sideconditions -> case program of
                 Table str keys prs -> prFunc_Table environmentList keys prs sideconditions
-                _ -> [EnvError])
+                _ -> [("", "", Stuck, EnvError)])
         ]
 
 empSideCons :: SideCondition
