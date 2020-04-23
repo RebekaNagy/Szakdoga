@@ -14,9 +14,9 @@ mainConversion [] ((init, final), (actions, tables, prog)) =
     where filteredProgram = (filter (\x -> x /= Skip) prog)
 mainConversion (x:xs) ((init, final), (actions, tables, prog)) =
     case initEnvValid init of
-        False -> (([("", "", Stuck, EnvError)], [EnvError]), ProgError)
+        False -> (([("", Stuck, EnvError)], [EnvError]), ProgError)
         True -> case final of
-            EnvError -> (([("", "", Stuck, EnvError)], [EnvError]), ProgError)
+            EnvError -> (([("", Stuck, EnvError)], [EnvError]), ProgError)
             _ -> case prog of
                 [ProgError] -> (((envToIdEnv init 0), finalizeFinal final), ProgError)
                 _ -> case x of
@@ -393,7 +393,7 @@ initEnvValid (env:xs) =
 
 envToIdEnv :: [Environment] -> Int -> [IdEnvironment]
 envToIdEnv [] number = []
-envToIdEnv ((env):xs) number = ((show number), (show number), NoMatch, env) : envToIdEnv xs (number + 1) 
+envToIdEnv ((env):xs) number = ((show number), NoMatch, env) : envToIdEnv xs (number + 1) 
 
 finalizeFinal :: Environment -> [Environment]
 finalizeFinal (Env env) = (Env env) : (dropEnv (Env env)) : []
@@ -436,10 +436,6 @@ dataToString (Assignment str strs) = "Assignment " ++ str ++ (unwords strs)
 dataToString (Drop) = "Drop "
 dataToString (SetHeaderValidity str v) = "SetHeader " ++ str ++ " " ++ (validityToString v)
 
-validityToString :: Validity -> String
-validityToString Valid = "Valid"
-validityToString Invalid = "Invalid"
-validityToString Undefined = "Undefined"
 
 envListToString :: [Environment] -> String
 envListToString [] = ""
@@ -450,8 +446,9 @@ envToString (Env []) = ""
 envToString (Env (x:xs)) = headerToString x ++ "\n" ++ (envToString (Env xs))
 
 headerToString :: Header -> String
-headerToString (header, (validity, fields)) = "fejléc: (" ++ header ++ ", " ++ (validityToString validity) ++ ")\n mezők:" ++ fieldsToString fields
+headerToString (header, (validity, fields)) = "fejléc: (" ++ header ++ ", " ++ (show validity) ++ ")\n mezők:" ++ fieldsToString fields
 
 fieldsToString :: [Field] -> String
 fieldsToString [] = ""
-fieldsToString ((name, validity):xs) = "(" ++ name ++ ", " ++ (validityToString validity) ++ ") " ++ (fieldsToString xs) 
+fieldsToString ((name, validity):xs) = "(" ++ name ++ ", " ++ (show validity) ++ ") " ++ (fieldsToString xs) 
+

@@ -17,6 +17,7 @@ main = do
     let prog = snd out
     let strprog = dataToString prog
     let verifyenv = (verifyP4 (fst envs) prog empSideCons)
+    let compare = compareCalculatedWithFinal verifyenv (snd envs)
     putStrLn "Initial:"
     mapM print (fst envs)
     putStrLn ""
@@ -26,11 +27,11 @@ main = do
     putStrLn "Program:"
     print prog
     putStrLn ""
-    putStrLn "Program as string:"
-    putStr strprog
-    putStrLn "\n"
     putStrLn "VerifyEnvironment:"
     mapM print verifyenv
+    putStrLn ""
+    putStrLn "ComparedEnvs:"
+    mapM print compare
     return strprog
 
 --ghc --make -shared calculation.hs
