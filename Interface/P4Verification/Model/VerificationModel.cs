@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
-using P4Verification;
+using System.Threading.Tasks;
 
 namespace P4Verification.Model
 {
@@ -9,7 +10,6 @@ namespace P4Verification.Model
     {
         private string _inputString;
         private string _outputString;
-        private List<String> _rules;
         private string _errorString;
         public string InputString
         {
@@ -45,13 +45,13 @@ namespace P4Verification.Model
                 }
             }
         }
-        
+
         public HaskellCalculation hscalculation { get; set; }
 
 
         public event EventHandler<CalculationEventArgs> CalculationDone;
         public event EventHandler<ErrorEventArgs> Error;
-        public VerificationModel() 
+        public VerificationModel()
         {
             OutputString = "A végeredmény itt fog megjelenni.";
             InputString = "Kód bemásolása.";
@@ -60,7 +60,7 @@ namespace P4Verification.Model
 
         public void Calculate(string input, string conds, bool locking)
         {
-            if(locking)
+            if (locking)
             {
                 if (input != null && input != "")
                 {

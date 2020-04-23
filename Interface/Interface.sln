@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29509.3
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "P4Verification", "P4Verification\P4Verification.csproj", "{8269D455-A6AE-4ED5-A09B-C854F698ADE1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "P4Verification", "P4Verification\P4Verification.csproj", "{4B42AA46-A273-4287-A796-5952147091BF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8269D455-A6AE-4ED5-A09B-C854F698ADE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8269D455-A6AE-4ED5-A09B-C854F698ADE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8269D455-A6AE-4ED5-A09B-C854F698ADE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8269D455-A6AE-4ED5-A09B-C854F698ADE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4B42AA46-A273-4287-A796-5952147091BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B42AA46-A273-4287-A796-5952147091BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B42AA46-A273-4287-A796-5952147091BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B42AA46-A273-4287-A796-5952147091BF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {97586A36-FC78-4D5D-A87D-5C6572EE95D0}
+		SolutionGuid = {2E2CE06B-2A2B-42E6-A191-0613ABFA021C}
 	EndGlobalSection
 EndGlobal

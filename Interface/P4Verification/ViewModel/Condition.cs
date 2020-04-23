@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace P4Verification.ViewModel
 {
@@ -16,8 +18,8 @@ namespace P4Verification.ViewModel
     {
         public SelectCondition()
         {
-            ConditionOptions = new ObservableCollection<string>(new List<string> { 
-                "Nincs ellenőrzés", 
+            ConditionOptions = new ObservableCollection<string>(new List<string> {
+                "Nincs ellenőrzés",
                 "Összes feltételbeli változó valid",
                 "Összes feltételbeli változó invalid"
             });
