@@ -30,7 +30,7 @@ main = do
     putStr strprog
     putStrLn "\n"
     putStrLn "VerifyEnvironment:"
-    mapM print (snd verifyenv)
+    mapM print verifyenv
     return strprog
 
 --ghc --make -shared calculation.hs

@@ -61,7 +61,9 @@ namespace P4Verification.ViewModel
                 "Fejléc valid",
                 "Fejléc invalid",
                 "Fejléc mezői validak",
-                "Fejléc mezői invalidak"
+                "Fejléc mezői invalidak",
+                "Fejléc és a mezői validak",
+                "Fejléc és a mezői invalidak"
             });
         }
     }
@@ -72,6 +74,7 @@ namespace P4Verification.ViewModel
         {
             ConditionOptions = new ObservableCollection<string>(new List<string> {
                 "Nincs ellenőrzés",
+                "Drop érték invalid",
                 "Összes fejléc valid",
                 "Összes fejléc invalid",
                 "Összes mező valid",

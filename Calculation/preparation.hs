@@ -246,10 +246,12 @@ keyConversion (x:xs) =
 actsConversion :: [String] -> [Program] -> [Program]
 actsConversion [] actions = []
 actsConversion (x:xs) actions = 
-    case action of
-        [] -> [] ++ (actsConversion xs actions)
-        _ -> (head action) : (actsConversion xs actions)
-    where action = (filter (\(ActCons id pr) -> id == x) actions)
+    case x of
+        "NoAction" -> (ActCons "NoAction" Skip) : (actsConversion xs actions)
+        _ -> case action of
+            [] -> [] ++ (actsConversion xs actions)
+            _ -> (head action) : (actsConversion xs actions)
+        where action = (filter (\(ActCons id pr) -> id == x) actions)
 
 ------------------------------------- APPLY CONVERSION FUNCTIONS
 applyConversion :: [Statement] -> [Program] -> [Program] -> Program
@@ -341,8 +343,8 @@ assignCondConversion '1' = LeftValid
 assignCondConversion '2' = LeftInvalid
 assignCondConversion '3' = RightValid
 assignCondConversion '4' = RightInvalid
-assignCondConversion '5' = EveryValid
-assignCondConversion '6' = EveryInvalid
+assignCondConversion '5' = EveryAValid
+assignCondConversion '6' = EveryAInvalid
 assignCondConversion _ = AssignmentError
 
 setHeaderCondConversion :: Char -> SetHeaderCondition
@@ -351,16 +353,17 @@ setHeaderCondConversion '1' = HeaderValid
 setHeaderCondConversion '2' = HeaderInvalid
 setHeaderCondConversion '3' = FieldsValid
 setHeaderCondConversion '4' = FieldsInvalid
+setHeaderCondConversion '5' = EverySValid
+setHeaderCondConversion '6' = EverySInvalid
 setHeaderCondConversion _ = SetHeaderError
 
 dropCondConversion :: Char -> DropCondition
-dropCondConversion '0' = NoneDrop 
-dropCondConversion '1' = DropValid
-dropCondConversion '2' = DropInvalid
-dropCondConversion '3' = EveryHeaderValid
-dropCondConversion '4' = EveryHeaderInvalid
-dropCondConversion '5' = EveryFieldValid
-dropCondConversion '6' = EveryFieldInvalid 
+dropCondConversion '0' = NoneDrop
+dropCondConversion '1' = DropInvalid
+dropCondConversion '2' = EveryHeaderValid
+dropCondConversion '3' = EveryHeaderInvalid
+dropCondConversion '4' = EveryFieldValid
+dropCondConversion '5' = EveryFieldInvalid 
 dropCondConversion _ = DropError
 
 
@@ -429,6 +432,7 @@ envListToString (x:xs) = (envToString x) ++ "\n" ++ (envListToString xs)
 envToString :: Environment -> String
 envToString (Env []) = ""
 envToString (Env (x:xs)) = headerToString x ++ "\n" ++ (envToString (Env xs))
+envToString (Contradiction) = "Contradiction\n"
 
 headerToString :: Header -> String
 headerToString (header, (validity, fields)) = "fejléc: (" ++ header ++ ", " ++ (validityToString validity) ++ ")\n mezők:" ++ fieldsToString fields

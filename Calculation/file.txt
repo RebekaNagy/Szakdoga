@@ -41,6 +41,7 @@ control MyIngress(inout headers hdr,
                   inout standard_metadata_t standard_metadata) {
     
     action drop() {
+        mark_to_drop();
     }
     
     action ipv4_ch() {
@@ -57,6 +58,7 @@ control MyIngress(inout headers hdr,
         actions = {
             ipv4_ch;
             drop;
+            NoAction;
         }
         size = 1024;
         default_action = drop();
