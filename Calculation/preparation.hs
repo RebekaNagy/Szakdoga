@@ -434,12 +434,12 @@ dataToString (Table str keys acts) = "Table " ++ str ++ " " ++ (unwords keys) ++
 dataToString (ActCons str pr) = "Action " ++ str ++ " " ++ dataToString pr
 dataToString (Assignment str strs) = "Assignment " ++ str ++ (unwords strs)
 dataToString (Drop) = "Drop "
-dataToString (SetHeaderValidity str v) = "SetHeader " ++ str ++ " " ++ (validityToString v)
+dataToString (SetHeaderValidity str v) = "SetHeader " ++ str ++ " " ++ (show v)
 
 
-envListToString :: [Environment] -> String
+envListToString :: [IdEnvironment] -> String
 envListToString [] = ""
-envListToString (x:xs) = (envToString x) ++ "\n" ++ (envListToString xs)
+envListToString ((id, envtype, env):xs) = id++"@"++(show envtype) ++"@"++(envToString env) ++ "#" ++ (envListToString xs)
 
 envToString :: Environment -> String
 envToString (Env []) = ""

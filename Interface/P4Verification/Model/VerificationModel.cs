@@ -11,6 +11,7 @@ namespace P4Verification.Model
         private string _inputString;
         private string _outputString;
         private string _errorString;
+        private List<string> _environments;
         public string InputString
         {
             get { return _inputString; }
@@ -46,6 +47,18 @@ namespace P4Verification.Model
             }
         }
 
+        public List<string> Environments
+        {
+            get { return _environments; }
+            private set
+            {
+                if (_environments != value)
+                {
+                    _environments = value;
+                }
+            }
+        }
+
         public HaskellCalculation hscalculation { get; set; }
 
 
@@ -56,6 +69,7 @@ namespace P4Verification.Model
             OutputString = "A végeredmény itt fog megjelenni.";
             InputString = "Kód bemásolása.";
             hscalculation = new HaskellCalculation();
+            Environments = new List<string>();
         }
 
         public void Calculate(string input, string conds, bool locking)
@@ -73,7 +87,30 @@ namespace P4Verification.Model
                         if (errortmp == "NOERROR")
                         {
                             ErrorString = "";
-                            OutputString = tmp.Substring(index);
+                            string envs = tmp.Substring(index + 2);
+                            index = envs.IndexOf("&");
+                            string finalenvs = envs.Substring(index + 1);
+                            envs = envs.Substring(0, index);
+                            index = finalenvs.IndexOf("&");
+                            string initenvs = finalenvs.Substring(index + 1);
+                            finalenvs = finalenvs.Substring(0, index);
+                            OutputString = "final:" + finalenvs + "\n\n" + "init:" + initenvs + "\n\n";
+
+                            while(envs != string.Empty)
+                            {
+                                index = envs.IndexOf("#");
+                                tmp = envs.Substring(0, index);
+                                Environments.Add(tmp);
+                                if(index + 1 < envs.Length)
+                                {
+                                    envs = envs.Substring(index + 1);
+                                }
+                                else
+                                {
+                                    envs = string.Empty;
+                                }
+                            }
+
                         }
                         else
                         {
@@ -87,14 +124,14 @@ namespace P4Verification.Model
                         OutputString = "";
                     }
 
-                    OnCalculationDone(OutputString);
+                    OnCalculationDone(OutputString, Environments);
                     OnNewError(ErrorString);
                 }
                 else
                 {
                     InputString = input;
                     OutputString = "";
-                    OnCalculationDone(OutputString);
+                    OnCalculationDone(OutputString, Environments);
                     ErrorString = "Üres input.";
                     OnNewError(ErrorString);
 
@@ -104,15 +141,15 @@ namespace P4Verification.Model
             {
                 InputString = input;
                 OutputString = "";
-                OnCalculationDone(OutputString);
+                OnCalculationDone(OutputString, Environments);
                 ErrorString = "A kiértékeléshez szükséges a feltételek rögzítése.";
                 OnNewError(ErrorString);
             }
         }
 
-        private void OnCalculationDone(string n)
+        private void OnCalculationDone(string output, List<string> envs)
         {
-            CalculationDone?.Invoke(this, new CalculationEventArgs(n));
+            CalculationDone?.Invoke(this, new CalculationEventArgs(output, envs));
         }
 
         private void OnNewError(string n)

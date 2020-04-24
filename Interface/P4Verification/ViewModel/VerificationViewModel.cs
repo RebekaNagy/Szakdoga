@@ -120,18 +120,15 @@ namespace P4Verification.ViewModel
             }
         }
 
-        private IBidirectionalGraph<object, IEdge<object>> _graphToVisualize;
+        private BidirectionalGraph<object, IEdge<object>> _graphToVisualize;
 
-        public IBidirectionalGraph<object, IEdge<object>> GraphToVisualize
+        public BidirectionalGraph<object, IEdge<object>> GraphToVisualize
         {
             get { return _graphToVisualize; }
             set
             {
-                if (_graphToVisualize != value)
-                {
-                    _graphToVisualize = value;
-                    OnPropertyChanged();
-                }
+                _graphToVisualize = value;
+                OnPropertyChanged();
             }
         }
 
@@ -167,6 +164,8 @@ namespace P4Verification.ViewModel
             SetHeaderConds = new SetHeaderCondition();
             DropConds = new DropCondition();
 
+            GraphToVisualize = new BidirectionalGraph<object, IEdge<object>>();
+
             SelectedSelect = 0;
             SelectedTable = 0;
             SelectedAssignment = 0;
@@ -187,9 +186,9 @@ namespace P4Verification.ViewModel
         }
         private void Model_CalculationDone(object sender, CalculationEventArgs e)
         {
-            this.Output = e.Result;
+            this.Output = e.ResultOutput;
             OnPropertyChanged("Output");
-            CreateGraphToVisualize();
+            CreateGraphToVisualize(e.ResultEnvs);
         }
 
         private void Model_Error(object sender, ErrorEventArgs e)
@@ -218,24 +217,58 @@ namespace P4Verification.ViewModel
             Editing = true;
         }
 
-        private void CreateGraphToVisualize()
+        private void CreateGraphToVisualize(List<string> envs)
         {
             var g = new BidirectionalGraph<object, IEdge<object>>();
 
-            string[] vertices = new string[5];
-            for (int i = 0; i < 5; i++)
+            GraphToVisualize.Clear();
+
+            OnPropertyChanged("GraphToVisualize");
+
+            foreach (var env in envs)
             {
-                vertices[i] = "Nagyon-nagyon hosszu szoveg hogy lathatova valjon\n" +
-                    "mikent fog megjelenni ha environmentekkel lesz majd feltoltve a grafom" + i.ToString();
-                g.AddVertex(vertices[i]);
+                int index = env.IndexOf("@");
+                string id = env.Substring(0, index);
+                string newenv = env.Substring(index + 1);
+                index = newenv.IndexOf("@");
+                string envtype = newenv.Substring(0, index);
+                newenv = newenv.Substring(index + 1);
+                while (id != string.Empty)
+                {
+                    if(id.IndexOf("$") != -1)
+                    {
+                        index = id.IndexOf("$");
+                        string newvertex1 = id.Substring(0, index);
+                        id = id.Substring(index + 1);
+                        if (id.IndexOf("$") != -1)
+                        {
+                            index = id.IndexOf("$");
+                            string newvertex2 = id.Substring(0, index);
+                            g.AddVertex(newvertex1);
+                            g.AddVertex(newvertex2);
+                            g.AddEdge(new Edge<object>(newvertex1, newvertex2));
+                        }
+                        else
+                        {
+                            g.AddVertex(newvertex1);
+                            g.AddVertex(id);
+                            g.AddEdge(new Edge<object>(newvertex1, id));
+                            g.AddVertex(newenv);
+                            g.AddEdge(new Edge<object>(id, newenv));
+                            id = string.Empty;
+                        }
+                    }
+                    else
+                    {
+                        g.AddVertex(id);
+                        g.AddVertex(newenv);
+                        g.AddEdge(new Edge<object>(id, newenv));
+                        id = string.Empty;
+                    }
+                }
             }
-
-            g.AddEdge(new Edge<object>(vertices[0], vertices[1]));
-            g.AddEdge(new Edge<object>(vertices[0], vertices[2]));
-            g.AddEdge(new Edge<object>(vertices[0], vertices[3]));
-            g.AddEdge(new Edge<object>(vertices[2], vertices[4]));
-
-            GraphToVisualize = g;
+            GraphToVisualize = g.Clone();
+            OnPropertyChanged("GraphToVisualize");
         }
     }
 }
