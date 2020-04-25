@@ -8,15 +8,17 @@ namespace P4Verification.Model
 {
     class CalculationEventArgs : EventArgs
     {
-        public string ResultOutput { get; private set; }
+        public string ResultFinalEnvs { get; private set; }
 
-        public List<string> ResultEnvs { get; private set; }
+        public List<string> ResultInitEnvs { get; private set; }
 
-        public CalculationEventArgs(string output, List<string> envs)
+        public List<IdEnvironment> ResultEnvs { get; private set; }
+
+        public CalculationEventArgs(string finalenvs, List<string> initenvs, List<IdEnvironment> envs)
         {
-            ResultOutput = output;
+            ResultFinalEnvs = finalenvs;
+            ResultInitEnvs = initenvs;
             ResultEnvs = envs;
-
         }
     }
 }

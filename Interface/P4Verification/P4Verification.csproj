@@ -90,9 +90,11 @@
     <Compile Include="Model\CalculationEventArgs.cs" />
     <Compile Include="Model\ErrorEventArgs.cs" />
     <Compile Include="Model\HaskellCalculation.cs" />
+    <Compile Include="Model\IdEnvironment.cs" />
     <Compile Include="Model\VerificationModel.cs" />
     <Compile Include="ViewModel\Condition.cs" />
     <Compile Include="ViewModel\DelegateCommand.cs" />
+    <Compile Include="ViewModel\P4Graph.cs" />
     <Compile Include="ViewModel\VerificationViewModel.cs" />
     <Compile Include="ViewModel\ViewModelBase.cs" />
     <Compile Include="View\MainWindow.xaml.cs">

@@ -32,6 +32,9 @@ main = do
     putStrLn ""
     putStrLn "ComparedEnvs:"
     mapM print compare
+    let stringo = envListToString verifyenv ++ "&" ++ (show (snd envs)) ++ "&" ++ (show (fst envs))
+    putStrLn ""
+    print stringo
     return strprog
 
 --ghc --make -shared calculation.hs

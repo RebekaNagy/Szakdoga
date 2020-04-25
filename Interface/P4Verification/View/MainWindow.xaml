@@ -6,8 +6,16 @@
         xmlns:graphsharp="clr-namespace:GraphSharp.Controls;assembly=GraphSharp.Controls"
         xmlns:zoom="clr-namespace:WPFExtensions.Controls;assembly=WPFExtensions"
         xmlns:local="clr-namespace:P4Verification"
+        xmlns:viewModel="clr-namespace:P4Verification.ViewModel"
         mc:Ignorable="d"
         Title="P4 programok verifikációja" Height="800" Width="1000">
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type viewModel:P4Vertex}">
+            <Border BorderBrush="Beige" BorderThickness="2" Background="{Binding VertexColor}" MinWidth="50" MinHeight="10">
+                <TextBlock Text="{Binding Name}"/>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
     <Grid x:Name="mgrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
@@ -126,11 +134,11 @@
         </ScrollViewer>
         <zoom:ZoomControl Grid.Column="0" Grid.Row="1"
                       Margin="10,10.4,9.6,10.4" Grid.ColumnSpan="3">
-            <graphsharp:GraphLayout x:Name="graphLayout"
-                                    Graph="{Binding GraphToVisualize}"
-                                    LayoutAlgorithmType="Tree"
-                                    OverlapRemovalAlgorithmType="FSA"
-                                    HighlightAlgorithmType="Simple"/>
+            <viewModel:P4GraphLayout x:Name="p4graphLayout"
+                                  Graph="{Binding GraphToVisualize}"
+                                  LayoutAlgorithmType="Tree"
+                                  OverlapRemovalAlgorithmType="FSA"
+                                  HighlightAlgorithmType="Simple"/>
         </zoom:ZoomControl>
     </Grid>
 </Window>

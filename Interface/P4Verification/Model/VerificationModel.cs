@@ -9,9 +9,10 @@ namespace P4Verification.Model
     class VerificationModel
     {
         private string _inputString;
-        private string _outputString;
         private string _errorString;
-        private List<string> _environments;
+        private List<IdEnvironment> _environments;
+        private string _finalenvs;
+        private List<string> _initenvs;
         public string InputString
         {
             get { return _inputString; }
@@ -23,14 +24,27 @@ namespace P4Verification.Model
                 }
             }
         }
-        public string OutputString
+
+        public string FinalEnvs
         {
-            get { return _outputString; }
+            get { return _finalenvs; }
             private set
             {
-                if (_outputString != value)
+                if (_finalenvs != value)
                 {
-                    _outputString = value;
+                    _finalenvs = value;
+                }
+            }
+        }
+
+        public List<string> InitEnvs
+        {
+            get { return _initenvs; }
+            private set
+            {
+                if (_initenvs != value)
+                {
+                    _initenvs = value;
                 }
             }
         }
@@ -47,7 +61,7 @@ namespace P4Verification.Model
             }
         }
 
-        public List<string> Environments
+        public List<IdEnvironment> Environments
         {
             get { return _environments; }
             private set
@@ -66,95 +80,89 @@ namespace P4Verification.Model
         public event EventHandler<ErrorEventArgs> Error;
         public VerificationModel()
         {
-            OutputString = "A végeredmény itt fog megjelenni.";
             InputString = "Kód bemásolása.";
             hscalculation = new HaskellCalculation();
-            Environments = new List<string>();
+            Environments = new List<IdEnvironment>();
+            FinalEnvs = "";
+            InitEnvs = new List<string>();
         }
 
         public void Calculate(string input, string conds, bool locking)
         {
+            FinalEnvs = "";
+            InitEnvs.Clear();
+            Environments.Clear();
+            ErrorString = "";
+            InputString = input;
+
             if (locking)
             {
-                if (input != null && input != "")
+                if (InputString != null && InputString != "")
                 {
-                    InputString = input;
                     string tmp = hscalculation.HsCalculate(InputString, conds);
-                    int index = tmp.IndexOf(':');
-                    if (index > 0)
+
+                    var parts = tmp.Split('&');
+
+                    if (parts.Length == 4)
                     {
-                        string errortmp = tmp.Substring(0, index);
-                        if (errortmp == "NOERROR")
+                        if (parts[0] == "NOERROR")
                         {
-                            ErrorString = "";
-                            string envs = tmp.Substring(index + 2);
-                            index = envs.IndexOf("&");
-                            string finalenvs = envs.Substring(index + 1);
-                            envs = envs.Substring(0, index);
-                            index = finalenvs.IndexOf("&");
-                            string initenvs = finalenvs.Substring(index + 1);
-                            finalenvs = finalenvs.Substring(0, index);
-                            OutputString = "final:" + finalenvs + "\n\n" + "init:" + initenvs + "\n\n";
-
-                            while(envs != string.Empty)
-                            {
-                                index = envs.IndexOf("#");
-                                tmp = envs.Substring(0, index);
-                                Environments.Add(tmp);
-                                if(index + 1 < envs.Length)
-                                {
-                                    envs = envs.Substring(index + 1);
-                                }
-                                else
-                                {
-                                    envs = string.Empty;
-                                }
-                            }
-
+                            processEnvs(parts[1]);
+                            FinalEnvs = parts[2];
+                            InitEnvs.Add(parts[3]);
                         }
                         else
                         {
-                            ErrorString = errortmp;
-                            OutputString = "";
+                            ErrorString = parts[0];
                         }
                     }
                     else
                     {
                         ErrorString = "Ismeretlen hiba.";
-                        OutputString = "";
                     }
-
-                    OnCalculationDone(OutputString, Environments);
-                    OnNewError(ErrorString);
                 }
                 else
                 {
-                    InputString = input;
-                    OutputString = "";
-                    OnCalculationDone(OutputString, Environments);
                     ErrorString = "Üres input.";
-                    OnNewError(ErrorString);
-
                 }
             }
             else
-            {
-                InputString = input;
-                OutputString = "";
-                OnCalculationDone(OutputString, Environments);
-                ErrorString = "A kiértékeléshez szükséges a feltételek rögzítése.";
-                OnNewError(ErrorString);
+            {                    
+                ErrorString = "A kiértékeléshez szükséges a feltételek rögzítése.";                
             }
+            OnCalculationDone(FinalEnvs, InitEnvs, Environments);
+            OnNewError(ErrorString);
         }
 
-        private void OnCalculationDone(string output, List<string> envs)
+        private void OnCalculationDone(string finalenvs, List<string> initenvs, List<IdEnvironment> envs)
         {
-            CalculationDone?.Invoke(this, new CalculationEventArgs(output, envs));
+            CalculationDone?.Invoke(this, new CalculationEventArgs(finalenvs, initenvs, envs));
         }
 
         private void OnNewError(string n)
         {
             Error?.Invoke(this, new ErrorEventArgs(n));
+        }
+
+        private void processEnvs(string envs)
+        {
+            var tmpenvs = envs.Split('#');
+
+            foreach (var tmpenv in tmpenvs)
+            {
+                if(tmpenv != "" || tmpenv != string.Empty)
+                {
+                    var envparts = tmpenv.Split('@');
+                    var idparts = envparts[0].Split('$').ToList();
+                    Environments.Add(new IdEnvironment
+                    {
+                        LeafEnv = envparts[2],
+                        EnvType =  envparts[1],
+                        EnvId = idparts
+                    });
+                }
+            }
+
         }
     }
 }

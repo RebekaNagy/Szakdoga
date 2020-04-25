@@ -13,13 +13,13 @@ import Control.Monad.IO.Class
 helpCalculate :: String -> String -> String
 helpCalculate program conditions =    
     case (fst(fst prepared)) of
-        [("", Stuck, EnvError)] -> "A parser vagy deparser helytelen, így nem sikerült a környezetek megfelelő generálása.:" 
+        [("", Stuck, EnvError)] -> "A parser vagy deparser helytelen, így nem sikerült a környezetek megfelelő generálása.&" 
         _ -> case (snd prepared) of
-            EmptyProg -> "A program nem tartalmaz verifikálásra alkalmas részt.:"
-            ProgError -> "A program szintaktikailag helytelen, vagy a vizsgált résznyelven kívül esik.:"
+            EmptyProg -> "A program nem tartalmaz verifikálásra alkalmas részt.&"
+            ProgError -> "A program szintaktikailag helytelen, vagy a vizsgált résznyelven kívül esik.&"
             _ -> case sidecons of
-                SideCondError -> "Hiba a mellékfeltételek generálásakor, vagy átadásakor.:"
-                _ -> "NOERROR::" ++ envListToString (verifyP4 (fst (fst prepared)) (snd prepared) sidecons 0) ++ "&" ++ (show (snd (fst prepared))) ++ "&" ++ (show (fst (fst prepared)))
+                SideCondError -> "Hiba a mellékfeltételek generálásakor, vagy átadásakor.&"
+                _ -> "NOERROR&" ++ envListToString (compareCalculatedWithFinal (verifyP4 (fst (fst prepared)) (snd prepared) sidecons 0) (snd (fst prepared))) ++ "&" ++ (show (snd (fst prepared))) ++ "&" ++ (show (fst (fst prepared)))
     where { prepared = (mainConversion (parseString program) ((initEnv, finalEnv), (initActions, initTables, initProg)));
         sidecons = sideConditionConversion conditions
         }
