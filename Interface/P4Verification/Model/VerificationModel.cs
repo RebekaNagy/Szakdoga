@@ -12,7 +12,7 @@ namespace P4Verification.Model
         private string _errorString;
         private List<IdEnvironment> _environments;
         private string _finalenvs;
-        private List<string> _initenvs;
+        private List<IdEnvironment> _initenvs;
         public string InputString
         {
             get { return _inputString; }
@@ -37,7 +37,7 @@ namespace P4Verification.Model
             }
         }
 
-        public List<string> InitEnvs
+        public List<IdEnvironment> InitEnvs
         {
             get { return _initenvs; }
             private set
@@ -84,7 +84,7 @@ namespace P4Verification.Model
             hscalculation = new HaskellCalculation();
             Environments = new List<IdEnvironment>();
             FinalEnvs = "";
-            InitEnvs = new List<string>();
+            InitEnvs = new List<IdEnvironment>();
         }
 
         public void Calculate(string input, string conds, bool locking)
@@ -109,7 +109,7 @@ namespace P4Verification.Model
                         {
                             processEnvs(parts[1]);
                             FinalEnvs = parts[2];
-                            InitEnvs.Add(parts[3]);
+                            processInitEnvs(parts[3]);
                         }
                         else
                         {
@@ -134,7 +134,7 @@ namespace P4Verification.Model
             OnNewError(ErrorString);
         }
 
-        private void OnCalculationDone(string finalenvs, List<string> initenvs, List<IdEnvironment> envs)
+        private void OnCalculationDone(string finalenvs, List<IdEnvironment> initenvs, List<IdEnvironment> envs)
         {
             CalculationDone?.Invoke(this, new CalculationEventArgs(finalenvs, initenvs, envs));
         }
@@ -163,6 +163,25 @@ namespace P4Verification.Model
                 }
             }
 
+        }
+
+        private void processInitEnvs(string envs)
+        {
+            var tmpenvs = envs.Split('#');
+
+            foreach (var tmpenv in tmpenvs)
+            {
+                if (tmpenv != "" || tmpenv != string.Empty)
+                {
+                    var parts = tmpenv.Split('@');
+                    InitEnvs.Add(new IdEnvironment
+                    {
+                        EnvId = new List<string> {parts[0]},
+                        EnvType = "",
+                        LeafEnv = parts[1]
+                    });
+                }
+            }
         }
     }
 }

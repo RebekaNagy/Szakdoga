@@ -9,6 +9,7 @@ using P4Verification.Model;
 using QuickGraph;
 using GraphSharp;
 using static P4Verification.ViewModel.P4Graph;
+using System.Collections.ObjectModel;
 
 namespace P4Verification.ViewModel
 {
@@ -23,6 +24,9 @@ namespace P4Verification.ViewModel
         private int _selectedDrop;
         private bool _locking;
         private bool _editing;
+        private List<IdEnvironment> _calculatedEnvironments;
+        private ObservableCollection<IdEnvironment> _initEnvironments;
+        private IdEnvironment _selectedInitEnv;
         public int SelectedSelect
         {
             get { return _selectedSelect; }
@@ -139,6 +143,45 @@ namespace P4Verification.ViewModel
             }
         }
 
+        public List<IdEnvironment> CalculatedEnvironments
+        {
+            get { return _calculatedEnvironments; }
+            set
+            {
+                if (_calculatedEnvironments != value)
+                {
+                    _calculatedEnvironments = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public ObservableCollection<IdEnvironment> InitEnvironments
+        {
+            get { return _initEnvironments; }
+            set
+            {
+                if (_initEnvironments != value)
+                {
+                    _initEnvironments = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public IdEnvironment SelectedInitEnv
+        {
+            get { return _selectedInitEnv; }
+            set
+            {
+                if (_selectedInitEnv != value)
+                {
+                    _selectedInitEnv = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public string ConditionString { get; set; }
 
         public SelectCondition SelectConds { get; set; }
@@ -161,12 +204,12 @@ namespace P4Verification.ViewModel
         public DelegateCommand ReadInputCommand { get; set; }
         public DelegateCommand LockCommand { get; set; }
         public DelegateCommand EditCommand { get; set; }
+
+        public DelegateCommand MakeGraphCommand { get; set; }
         public VerificationViewModel(VerificationModel model)
         {
             Model = model;
-
-            proba = true;
-
+            
             SelectConds = new SelectCondition();
             TableConds = new TableCondition();
             AssignmentConds = new AssignmentCondition();
@@ -174,6 +217,10 @@ namespace P4Verification.ViewModel
             DropConds = new DropCondition();
 
             GraphToVisualize = new P4Graph();
+
+            CalculatedEnvironments = new List<IdEnvironment>();
+            InitEnvironments = new ObservableCollection<IdEnvironment>();
+            SelectedInitEnv = new IdEnvironment();
 
             SelectedSelect = 0;
             SelectedTable = 0;
@@ -192,12 +239,17 @@ namespace P4Verification.ViewModel
             ReadInputCommand = new DelegateCommand(param => OnReadInput());
             LockCommand = new DelegateCommand(param => LockConditions());
             EditCommand = new DelegateCommand(param => EditConditions());
+            MakeGraphCommand = new DelegateCommand(param => MakeGraph());
         }
         private void Model_CalculationDone(object sender, CalculationEventArgs e)
         {
             this.Output = e.ResultFinalEnvs;
             OnPropertyChanged("Output");
-            CreateGraphToVisualize(e.ResultEnvs);
+            CalculatedEnvironments = new List<IdEnvironment>();
+            this.CalculatedEnvironments = e.ResultEnvs;
+            OnPropertyChanged("CalculatedEnvironments");
+            this.InitEnvironments = new ObservableCollection<IdEnvironment>(e.ResultInitEnvs);
+            OnPropertyChanged("InitEnvironments");
         }
 
         private void Model_Error(object sender, ErrorEventArgs e)
@@ -226,107 +278,73 @@ namespace P4Verification.ViewModel
             Editing = true;
         }
 
-        private void CreateGraphToVisualize(List<IdEnvironment> envs)
+        private void MakeGraph()
+        {
+            if(SelectedInitEnv.EnvId != null)
+            {
+                ErrorMessage = "";
+                CreateGraphToVisualize(SelectedInitEnv.EnvId[0]);
+            }
+            else
+            {
+                ErrorMessage = "Válasszon ki egy kezdőkörnyezetet!";
+                OnPropertyChanged("ErrorMessage");
+            }
+        }
+
+        private void CreateGraphToVisualize(string selectedEnvId)
         {            
             var g = new P4Graph();
             GraphToVisualize.Clear();
             
-            foreach (var env in envs)
+            foreach (var env in CalculatedEnvironments)
             {
-                var count = env.EnvId.Count();
-                List<P4Vertex> vertices = new List<P4Vertex>();
-
-                for(int i = 0; i < count; i++)
+                if(env.EnvId[0] == selectedEnvId)
                 {
-                    vertices.Add(new P4Vertex(env.EnvId[i]));
-                    vertices[i].VertexColor = new SolidColorBrush(Colors.White);
-                    P4Vertex result = g.Vertices.Where(x => x.Name == vertices[i].Name).FirstOrDefault();
-                    if (result == null)
-                    {
-                        g.AddVertex(vertices[i]);
-                    }
-                    else
-                    {
-                        vertices[i] = result;
-                    }
-                    if(i != 0)
-                    {
-                        g.AddEdge(new Edge<P4Vertex>(vertices[i-1], vertices[i]));
-                    }
-                }
+                    var count = env.EnvId.Count();
+                    List<P4Vertex> vertices = new List<P4Vertex>();
 
-                SolidColorBrush leafcolor = new SolidColorBrush();
-                switch (env.EnvType)
-                {
-                    case "NoMatch":
-                        leafcolor = new SolidColorBrush(Colors.Yellow);
-                        break;
-                    case "Match":
-                        leafcolor = new SolidColorBrush(Colors.Green);
-                        break;
-                    case "Stuck":
-                        leafcolor = new SolidColorBrush(Colors.Red);
-                        break;
-                }
-                vertices.Add(new P4Vertex(env.LeafEnv) { VertexColor = leafcolor });
-                g.AddVertex(vertices[count]);
-                g.AddEdge(new Edge<P4Vertex>(vertices[count - 1], vertices[count]));
+                    for (int i = 0; i < count; i++)
+                    {
+                        vertices.Add(new P4Vertex(env.EnvId[i]));
+                        vertices[i].VertexColor = new SolidColorBrush(Colors.White);
+                        P4Vertex result = g.Vertices.Where(x => x.Name == vertices[i].Name).FirstOrDefault();
+                        if (result == null)
+                        {
+                            g.AddVertex(vertices[i]);
+                        }
+                        else
+                        {
+                            vertices[i] = result;
+                        }
+                        if (i != 0)
+                        {
+                            g.AddEdge(new Edge<P4Vertex>(vertices[i - 1], vertices[i]));
+                        }
+                    }
+
+                    SolidColorBrush leafcolor = new SolidColorBrush();
+                    switch (env.EnvType)
+                    {
+                        case "NoMatch":
+                            leafcolor = new SolidColorBrush(Colors.Yellow);
+                            break;
+                        case "Match":
+                            leafcolor = new SolidColorBrush(Colors.Green);
+                            break;
+                        case "Stuck":
+                            leafcolor = new SolidColorBrush(Colors.Red);
+                            break;
+                    }
+                    vertices.Add(new P4Vertex(env.LeafEnv) { VertexColor = leafcolor });
+                    g.AddVertex(vertices[count]);
+                    g.AddEdge(new Edge<P4Vertex>(vertices[count - 1], vertices[count]));
+                }                  
 
             }
-            GraphToVisualize = g;
-            
-            /*
-            if (proba)
-            {
-                P4Vertex[] vertices = new P4Vertex[16];
-                for (int i = 0; i < 8; i++)
-                {
-                    vertices[i] = new P4Vertex("Vertex " + i.ToString());
-                    g.AddVertex(vertices[i]);
-                }
-                for (int i = 8; i < 16; i++)
-                {
-                    vertices[i] = new P4Vertex("Vertex " + (i - 8).ToString());
-                    var asdf = g.ContainsVertex(vertices[i]);
-                    if(!asdf)
-                    {
-                        g.AddVertex(vertices[i]);
-                    }
-                    var asd1 = new P4Vertex("a");
-                    var asd2 = new P4Vertex("a");
-                    var egyforma = asd1 == asd2;
-
-                    if(egyforma)
-                    {
-                        g.AddVertex(asd1);
-                        g.AddVertex(asd2);
-                    }
-
-                }
-                
-                //add some edges to the graph
-                g.AddEdge(new Edge<P4Vertex>(vertices[1], vertices[0]));
-                g.AddEdge(new Edge<P4Vertex>(vertices[2], vertices[1]));
-                g.AddEdge(new Edge<P4Vertex>(vertices[3], vertices[2]));
-                g.AddEdge(new Edge<P4Vertex>(vertices[1], vertices[3]));
-                g.AddEdge(new Edge<P4Vertex>(vertices[4], vertices[1]));
-                g.AddEdge(new Edge<P4Vertex>(vertices[5], vertices[6]));
-                g.AddEdge(new Edge<P4Vertex>(vertices[6], vertices[7]));
-                g.AddEdge(new Edge<P4Vertex>(vertices[6], vertices[4]));
-
-                GraphToVisualize = g;
-                proba = false;
-            }
-            else
-            {
-                GraphToVisualize = new P4Graph();
-                OnPropertyChanged("GraphToVisualize");
-                GraphToVisualize = g;
-                proba = true;
-            }*/
+            GraphToVisualize = g;          
 
         }
-        public bool proba { get; set; }
     }
     
 }

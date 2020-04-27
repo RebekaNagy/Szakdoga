@@ -10,11 +10,11 @@ namespace P4Verification.Model
     {
         public string ResultFinalEnvs { get; private set; }
 
-        public List<string> ResultInitEnvs { get; private set; }
+        public List<IdEnvironment> ResultInitEnvs { get; private set; }
 
         public List<IdEnvironment> ResultEnvs { get; private set; }
 
-        public CalculationEventArgs(string finalenvs, List<string> initenvs, List<IdEnvironment> envs)
+        public CalculationEventArgs(string finalenvs, List<IdEnvironment> initenvs, List<IdEnvironment> envs)
         {
             ResultFinalEnvs = finalenvs;
             ResultInitEnvs = initenvs;

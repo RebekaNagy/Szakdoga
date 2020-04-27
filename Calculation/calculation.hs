@@ -19,7 +19,7 @@ helpCalculate program conditions =
             ProgError -> "A program szintaktikailag helytelen, vagy a vizsgált résznyelven kívül esik.&"
             _ -> case sidecons of
                 SideCondError -> "Hiba a mellékfeltételek generálásakor, vagy átadásakor.&"
-                _ -> "NOERROR&" ++ envListToString (compareCalculatedWithFinal (verifyP4 (fst (fst prepared)) (snd prepared) sidecons 0) (snd (fst prepared))) ++ "&" ++ (show (snd (fst prepared))) ++ "&" ++ (show (fst (fst prepared)))
+                _ -> "NOERROR&" ++ envListToString (compareCalculatedWithFinal (verifyP4 (fst (fst prepared)) (snd prepared) sidecons 0) (snd (fst prepared))) ++ "&" ++ (show (snd (fst prepared))) ++ "&" ++ (initEnvListToString (fst (fst prepared)))
     where { prepared = (mainConversion (parseString program) ((initEnv, finalEnv), (initActions, initTables, initProg)));
         sidecons = sideConditionConversion conditions
         }
