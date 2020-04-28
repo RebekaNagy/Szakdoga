@@ -9,79 +9,72 @@ namespace P4Verification.ViewModel
 {
     public class Condition
     {
-        public ObservableCollection<string> ConditionOptions { get; set; }
-        public List<string> ConditionForHaskell { get; set; }
-        public Condition() { }
+        public ObservableCollection<string> CondsCheck { get; set; }
+
+        public Condition() 
+        {
+            CondsCheck = new ObservableCollection<string> { "Nincs", "Valid", "Invalid" };
+        }
     }
 
     public class SelectCondition : Condition
     {
-        public SelectCondition()
+        public int CondsField { get; set; }
+        public int CondsHeader { get; set; }
+        public SelectCondition() : base()
         {
-            ConditionOptions = new ObservableCollection<string>(new List<string> {
-                "Nincs ellenőrzés",
-                "Összes feltételbeli változó valid",
-                "Összes feltételbeli változó invalid"
-            });
+            CondsField = 0;
+            CondsHeader = 0;
         }
     }
 
     public class TableCondition : Condition
     {
-        public TableCondition()
+        public int KeysField { get; set; }
+        public int KeysHeader { get; set; }
+        public TableCondition() : base()
         {
-            ConditionOptions = new ObservableCollection<string>(new List<string> {
-                "Nincs ellenőrzés",
-                "Összes kulcs valid",
-                "Összes kulcs invalid"
-            });
+            KeysField = 0;
+            KeysHeader = 0;
         }
     }
 
     public class AssignmentCondition : Condition
     {
-        public AssignmentCondition()
+        public int LeftField { get; set; }
+        public int LeftHeader { get; set; }
+        public int RightField { get; set; }
+        public int RightHeader { get; set; }
+        public AssignmentCondition() : base()
         {
-            ConditionOptions = new ObservableCollection<string>(new List<string> {
-                "Nincs ellenőrzés",
-                "Bal oldali változó valid",
-                "Bal oldali változó invalid",
-                "Jobb oldali változók validak",
-                "Jobb oldali változók invalidak",
-                "Összes változó valid",
-                "Összes változó invalid"
-            });
+            LeftField = 0;
+            LeftHeader = 0;
+            RightField = 0;
+            RightHeader = 0;
         }
     }
 
     public class SetHeaderCondition : Condition
     {
-        public SetHeaderCondition()
+        public int Fields { get; set; }
+        public int Header { get; set; }
+        public SetHeaderCondition() : base()
         {
-            ConditionOptions = new ObservableCollection<string>(new List<string> {
-                "Nincs ellenőrzés",
-                "Fejléc valid",
-                "Fejléc invalid",
-                "Fejléc mezői validak",
-                "Fejléc mezői invalidak",
-                "Fejléc és a mezői validak",
-                "Fejléc és a mezői invalidak"
-            });
+            Fields = 0;
+            Header = 0;
         }
     }
 
     public class DropCondition : Condition
     {
-        public DropCondition()
+        public int DropValidity { get; set; }
+        public int Fields { get; set; }
+        public int Headers { get; set; }
+        public DropCondition() : base()
         {
-            ConditionOptions = new ObservableCollection<string>(new List<string> {
-                "Nincs ellenőrzés",
-                "Drop érték invalid",
-                "Összes fejléc valid",
-                "Összes fejléc invalid",
-                "Összes mező valid",
-                "Összes mező invalid"
-            });
+            DropValidity = 0;
+            Fields = 0;
+            Headers = 0;            
         }
     }
 }

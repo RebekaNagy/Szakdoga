@@ -17,78 +17,15 @@ namespace P4Verification.ViewModel
     {
         private VerificationModel Model;
         private string _errorMessage;
-        private int _selectedSelect;
-        private int _selectedTable;
-        private int _selectedAssignment;
-        private int _selectedSetHeader;
-        private int _selectedDrop;
-        private bool _locking;
-        private bool _editing;
         private List<IdEnvironment> _calculatedEnvironments;
         private ObservableCollection<IdEnvironment> _initEnvironments;
         private IdEnvironment _selectedInitEnv;
-        public int SelectedSelect
-        {
-            get { return _selectedSelect; }
-            set
-            {
-                if (_selectedSelect != value)
-                {
-                    _selectedSelect = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public int SelectedTable
-        {
-            get { return _selectedTable; }
-            set
-            {
-                if (_selectedTable != value)
-                {
-                    _selectedTable = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-        public int SelectedAssignment
-        {
-            get { return _selectedAssignment; }
-            set
-            {
-                if (_selectedAssignment != value)
-                {
-                    _selectedAssignment = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-        public int SelectedSetHeader
-        {
-            get { return _selectedSetHeader; }
-            set
-            {
-                if (_selectedSetHeader != value)
-                {
-                    _selectedSetHeader = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-        public int SelectedDrop
-        {
-            get { return _selectedDrop; }
-            set
-            {
-                if (_selectedDrop != value)
-                {
-                    _selectedDrop = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
+        private SelectCondition _selectConds;
+        private TableCondition _tableConds;
+        private AssignmentCondition _assignmentConds;
+        private SetHeaderCondition _setHeaderConds;
+        private DropCondition _dropConds;
+        
         public string ErrorMessage
         {
             get { return _errorMessage; }
@@ -102,31 +39,6 @@ namespace P4Verification.ViewModel
             }
         }
 
-        public bool Locking
-        {
-            get { return _locking; }
-            set
-            {
-                if (_locking != value)
-                {
-                    _locking = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public bool Editing
-        {
-            get { return _editing; }
-            set
-            {
-                if (_editing != value)
-                {
-                    _editing = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
 
         private P4Graph _graphToVisualize;
 
@@ -184,11 +96,66 @@ namespace P4Verification.ViewModel
 
         public string ConditionString { get; set; }
 
-        public SelectCondition SelectConds { get; set; }
-        public TableCondition TableConds { get; set; }
-        public AssignmentCondition AssignmentConds { get; set; }
-        public SetHeaderCondition SetHeaderConds { get; set; }
-        public DropCondition DropConds { get; set; }
+        public SelectCondition SelectConds 
+        {
+            get { return _selectConds; }
+            set
+            {
+                if (_selectConds != value)
+                {
+                    _selectConds = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+        public TableCondition TableConds 
+        {
+            get { return _tableConds; }
+            set
+            {
+                if (_tableConds != value)
+                {
+                    _tableConds = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+        public AssignmentCondition AssignmentConds 
+        {
+            get { return _assignmentConds; }
+            set
+            {
+                if (_assignmentConds != value)
+                {
+                    _assignmentConds = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+        public SetHeaderCondition SetHeaderConds 
+        {
+            get { return _setHeaderConds; }
+            set
+            {
+                if (_setHeaderConds != value)
+                {
+                    _setHeaderConds = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+        public DropCondition DropConds 
+        {
+            get { return _dropConds; }
+            set
+            {
+                if (_dropConds != value)
+                {
+                    _dropConds = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
         public string Output
         {
             get; set;
@@ -202,8 +169,6 @@ namespace P4Verification.ViewModel
 
         public DelegateCommand CalculateCommand { get; set; }
         public DelegateCommand ReadInputCommand { get; set; }
-        public DelegateCommand LockCommand { get; set; }
-        public DelegateCommand EditCommand { get; set; }
 
         public DelegateCommand MakeGraphCommand { get; set; }
         public VerificationViewModel(VerificationModel model)
@@ -221,24 +186,12 @@ namespace P4Verification.ViewModel
             CalculatedEnvironments = new List<IdEnvironment>();
             InitEnvironments = new ObservableCollection<IdEnvironment>();
             SelectedInitEnv = new IdEnvironment();
-
-            SelectedSelect = 0;
-            SelectedTable = 0;
-            SelectedAssignment = 0;
-            SelectedDrop = 0;
-            SelectedSetHeader = 0;
-            SelectedDrop = 0;
-
-            Locking = false;
-            Editing = true;
-
+            
             model.CalculationDone += new EventHandler<CalculationEventArgs>(Model_CalculationDone);
             model.Error += new EventHandler<ErrorEventArgs>(Model_Error);
 
-            CalculateCommand = new DelegateCommand(param => Model.Calculate(Input, ConditionString, Locking));
+            CalculateCommand = new DelegateCommand(param => StartCalculation());
             ReadInputCommand = new DelegateCommand(param => OnReadInput());
-            LockCommand = new DelegateCommand(param => LockConditions());
-            EditCommand = new DelegateCommand(param => EditConditions());
             MakeGraphCommand = new DelegateCommand(param => MakeGraph());
         }
         private void Model_CalculationDone(object sender, CalculationEventArgs e)
@@ -261,23 +214,32 @@ namespace P4Verification.ViewModel
             ReadInput?.Invoke(this, EventArgs.Empty);
         }
 
-        private void LockConditions()
+        private void StartCalculation()
         {
-            ConditionString = SelectedSelect.ToString() +
-                SelectedTable.ToString() +
-                SelectedAssignment.ToString() +
-                SelectedSetHeader.ToString() +
-                SelectedDrop.ToString();
-            Locking = true;
-            Editing = false;
+            string tmp = SelectConds.CondsField.ToString() +
+                SelectConds.CondsHeader.ToString() + 
+                "&" +
+                TableConds.KeysField.ToString() +
+                TableConds.KeysHeader.ToString() +
+                "&" +
+                AssignmentConds.LeftField.ToString() +
+                AssignmentConds.LeftHeader.ToString() +
+                AssignmentConds.RightField.ToString() + 
+                AssignmentConds.RightHeader.ToString() +
+                "&" +
+                SetHeaderConds.Fields.ToString() +
+                SetHeaderConds.Header.ToString() +
+                "&" +
+                DropConds.DropValidity.ToString() +
+                DropConds.Fields.ToString() +
+                DropConds.Headers.ToString();
 
-        }
-        private void EditConditions()
-        {
-            Locking = false;
-            Editing = true;
-        }
+            ConditionString = tmp;
+            OnPropertyChanged("ConditionString");            
 
+            Model.Calculate(Input, ConditionString);
+        }
+        
         private void MakeGraph()
         {
             if(SelectedInitEnv.EnvId != null)

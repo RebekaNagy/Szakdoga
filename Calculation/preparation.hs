@@ -313,59 +313,17 @@ actionCallConversion actionName actions
 ------------------------------------- SIDECONDITION CONVERSION FUNCTIONS
 
 sideConditionConversion :: String -> SideCondition
-sideConditionConversion (a:b:c:d:e:[])
-    | ifc /= IfError && tablec /= TableError && assignc /= AssignmentError && sethc /= SetHeaderError && dropc /= DropError = 
-        SideCon (ifc, tablec, assignc, sethc, dropc)
+sideConditionConversion str
+    | ((length ifcond == 2) && (length tablecond == 2) && (length assignmentcond == 4) && (length setheadercond == 2) && (length dropcond == 3)) = 
+        SideCon (ifcond, tablecond, assignmentcond, setheadercond, dropcond)
     | otherwise = SideCondError
-    where { ifc = ifCondConversion a;
-        tablec = tableCondConversion b;
-        assignc = assignCondConversion c;
-        sethc = setHeaderCondConversion d;
-        dropc = dropCondConversion e
+    where {
+        ifcond = takeUntil "&" str ;
+        tablecond = takeUntil "&" (drop 1 (dropWhile (/= '&') str)) ;
+        assignmentcond = takeUntil "&" (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') str)))) ;
+        setheadercond = takeUntil "&" (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') str)))))) ;
+        dropcond = takeUntil "&" (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') str))))))))
     }
-sideConditionConversion _ = SideCondError
-
-ifCondConversion :: Char -> IfCondition
-ifCondConversion '0' = NoneIf
-ifCondConversion '1' = CondsValid
-ifCondConversion '2' = CondsInvalid
-ifCondConversion _ = IfError
-
-tableCondConversion :: Char -> TableCondition
-tableCondConversion '0' = NoneTable 
-tableCondConversion '1' = KeysValid
-tableCondConversion '2' = KeysInvalid
-tableCondConversion _ = TableError
-
-assignCondConversion :: Char -> AssignmentCondition
-assignCondConversion '0' = NoneAssignment 
-assignCondConversion '1' = LeftValid
-assignCondConversion '2' = LeftInvalid
-assignCondConversion '3' = RightValid
-assignCondConversion '4' = RightInvalid
-assignCondConversion '5' = EveryAValid
-assignCondConversion '6' = EveryAInvalid
-assignCondConversion _ = AssignmentError
-
-setHeaderCondConversion :: Char -> SetHeaderCondition
-setHeaderCondConversion '0' = NoneSetHeader 
-setHeaderCondConversion '1' = HeaderValid 
-setHeaderCondConversion '2' = HeaderInvalid
-setHeaderCondConversion '3' = FieldsValid
-setHeaderCondConversion '4' = FieldsInvalid
-setHeaderCondConversion '5' = EverySValid
-setHeaderCondConversion '6' = EverySInvalid
-setHeaderCondConversion _ = SetHeaderError
-
-dropCondConversion :: Char -> DropCondition
-dropCondConversion '0' = NoneDrop
-dropCondConversion '1' = DropInvalid
-dropCondConversion '2' = EveryHeaderValid
-dropCondConversion '3' = EveryHeaderInvalid
-dropCondConversion '4' = EveryFieldValid
-dropCondConversion '5' = EveryFieldInvalid 
-dropCondConversion _ = DropError
-
 
 ------------------------------------- MISC FUNCTIONS
 setToValid :: Environment -> String -> Environment

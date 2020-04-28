@@ -87,7 +87,7 @@ namespace P4Verification.Model
             InitEnvs = new List<IdEnvironment>();
         }
 
-        public void Calculate(string input, string conds, bool locking)
+        public void Calculate(string input, string conds)
         {
             FinalEnvs = "";
             InitEnvs.Clear();
@@ -95,40 +95,33 @@ namespace P4Verification.Model
             ErrorString = "";
             InputString = input;
 
-            if (locking)
+            if (InputString != null && InputString != "")
             {
-                if (InputString != null && InputString != "")
+                string tmp = hscalculation.HsCalculate(InputString, conds);
+
+                var parts = tmp.Split('&');
+
+                if (parts.Length == 4)
                 {
-                    string tmp = hscalculation.HsCalculate(InputString, conds);
-
-                    var parts = tmp.Split('&');
-
-                    if (parts.Length == 4)
+                    if (parts[0] == "NOERROR")
                     {
-                        if (parts[0] == "NOERROR")
-                        {
-                            processEnvs(parts[1]);
-                            FinalEnvs = parts[2];
-                            processInitEnvs(parts[3]);
-                        }
-                        else
-                        {
-                            ErrorString = parts[0];
-                        }
+                        processEnvs(parts[1]);
+                        FinalEnvs = parts[2];
+                        processInitEnvs(parts[3]);
                     }
                     else
                     {
-                        ErrorString = "Ismeretlen hiba.";
+                        ErrorString = parts[0];
                     }
                 }
                 else
                 {
-                    ErrorString = "Üres input.";
+                    ErrorString = "Ismeretlen hiba.";
                 }
             }
             else
-            {                    
-                ErrorString = "A kiértékeléshez szükséges a feltételek rögzítése.";                
+            {
+                ErrorString = "Üres input.";
             }
             OnCalculationDone(FinalEnvs, InitEnvs, Environments);
             OnNewError(ErrorString);
