@@ -182,11 +182,17 @@
                           VerticalAlignment="Center" IsEnabled="{Binding DropConds.IsMainCheck}"
                           ItemsSource="{Binding DropConds.CondsCheck}"
                           SelectedIndex="{Binding DropConds.Headers}" Height="23" Margin="3,4.6,0,4.4"/>
-
             </Grid>
         </Border>
-        <TextBlock Grid.Column="2" Grid.Row="0" VerticalAlignment="Top" HorizontalAlignment="Left"
-                   Text="{Binding ErrorMessage}" TextWrapping="Wrap" Foreground="Red" Height="16" Margin="8.2,0,0,0" Width="0"/>
+        <Border Grid.Column="2" Grid.Row="0" VerticalAlignment="Top" HorizontalAlignment="Center" BorderThickness="{Binding ErrorBorder}"
+                Height="60" Margin="84.2,157,158.6,0" Background="#FFD4D4D4" Width="150" BorderBrush="Red">
+            <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" Foreground="Red" 
+                       Height="60" Margin="0,0,0.4,0" Background="#FFD4D4D4" Width="150" />
+        </Border>
+        <Border Grid.Column="2" Grid.Row="0" VerticalAlignment="Top" HorizontalAlignment="Center" BorderThickness="3"
+                Height="82" Margin="35.2,10,32.6,0" Background="#FFD4D4D4" Width="325" BorderBrush="#FFABADB3">
+            <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" Foreground="Black" Margin="6.8" Background="#FFD4D4D4" />
+        </Border>
         <Label Grid.Column="0" Grid.Row="1" Content="Válasszon kezdőkörnyezetet:" Margin="0,0.2,265.8,358.4"/>
         <ScrollViewer Grid.Column="0" Grid.Row="1" Margin="0,32.2,1.8,77.4">
             <ListView ItemsSource="{Binding InitEnvironments}"
@@ -196,24 +202,16 @@
         <Button Grid.Column="0" Grid.Row="1" Margin="240,329.2,72.8,30.4"
                 Content="Gráf megjelenítése"
                 Command="{Binding MakeGraphCommand}"/>
-        <Label Grid.Column="2" 
-               Margin="20.2,152,0,0" 
-               HorizontalAlignment="Left" 
-               Width="108" Height="25" 
-               VerticalAlignment="Top" 
-               Content="Eredmény"/>
         <Button Command="{Binding CalculateCommand}" 
-                Grid.Column="2"
+                Grid.Column="1"
                 Width="140" Height="30" 
-                Margin="123.2,147,0,0" 
+                Margin="495.2,62,0,0" 
                 VerticalAlignment="Top" 
                 HorizontalAlignment="Left" 
                 Content="Verifikáció"></Button>
         <ScrollViewer Grid.Column="2"
-                      Margin="35.2,202,9.6,29.8" Background="#FFD4D4D4" BorderBrush="#FFABADB3">
-            <TextBlock Text="{Binding Output}" 
-                       Grid.Column="1" 
-                       Margin="35,40,0,10" 
+                      Margin="35.2,222,9.6,9.8" Background="#FFD4D4D4" BorderBrush="#FFABADB3">
+            <TextBlock Text="{Binding FinalEnvironments}"  
                        ScrollViewer.HorizontalScrollBarVisibility="Visible" 
                        ScrollViewer.VerticalScrollBarVisibility="Visible" 
                        ScrollViewer.CanContentScroll="True"

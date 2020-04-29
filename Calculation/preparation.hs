@@ -315,15 +315,24 @@ actionCallConversion actionName actions
 sideConditionConversion :: String -> SideCondition
 sideConditionConversion str
     | ((length ifcond == 2) && (length tablecond == 2) && (length assignmentcond == 4) && (length setheadercond == 2) && (length dropcond == 3)) = 
-        SideCon (ifcond, tablecond, assignmentcond, setheadercond, dropcond)
+        SideCon (checkToV ifcond, checkToV tablecond, checkToV assignmentcond, checkToV setheadercond, checkToV dropcond)
     | otherwise = SideCondError
     where {
-        ifcond = takeUntil "&" str ;
-        tablecond = takeUntil "&" (drop 1 (dropWhile (/= '&') str)) ;
-        assignmentcond = takeUntil "&" (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') str)))) ;
-        setheadercond = takeUntil "&" (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') str)))))) ;
+        ifcond = takeUntil "&" str;
+        tablecond = takeUntil "&" (drop 1 (dropWhile (/= '&') str));
+        assignmentcond = takeUntil "&" (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') str))));
+        setheadercond = takeUntil "&" (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') str))))));
         dropcond = takeUntil "&" (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') str))))))))
     }
+
+checkToV :: String -> [Validity]
+checkToV [] = []
+checkToV (x:xs) =
+    case x of
+        '0' -> None : checkToV xs
+        '1' -> Valid : checkToV xs
+        '2' -> Invalid : checkToV xs
+
 
 ------------------------------------- MISC FUNCTIONS
 setToValid :: Environment -> String -> Environment

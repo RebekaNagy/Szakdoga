@@ -109,10 +109,10 @@ namespace P4Verification.Model
                         FinalEnvs = parts[2];
                         processInitEnvs(parts[3]);
                     }
-                    else
-                    {
-                        ErrorString = parts[0];
-                    }
+                }
+                else if(parts.Length == 2)
+                {
+                    ErrorString = parts[0];
                 }
                 else
                 {

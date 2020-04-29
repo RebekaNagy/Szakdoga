@@ -17,14 +17,17 @@ namespace P4Verification.ViewModel
     {
         private VerificationModel Model;
         private string _errorMessage;
+        private int _errorBorder;
         private List<IdEnvironment> _calculatedEnvironments;
         private ObservableCollection<IdEnvironment> _initEnvironments;
+        private string _finalEnvironments;
         private IdEnvironment _selectedInitEnv;
         private SelectCondition _selectConds;
         private TableCondition _tableConds;
         private AssignmentCondition _assignmentConds;
         private SetHeaderCondition _setHeaderConds;
         private DropCondition _dropConds;
+        private string _summary;
         
         public string ErrorMessage
         {
@@ -34,6 +37,32 @@ namespace P4Verification.ViewModel
                 if (_errorMessage != value)
                 {
                     _errorMessage = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public int ErrorBorder
+        {
+            get { return _errorBorder; }
+            set
+            {
+                if (_errorBorder != value)
+                {
+                    _errorBorder = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string Summary
+        {
+            get { return _summary; }
+            set
+            {
+                if (_summary != value)
+                {
+                    _summary = value;
                     OnPropertyChanged();
                 }
             }
@@ -76,6 +105,19 @@ namespace P4Verification.ViewModel
                 if (_initEnvironments != value)
                 {
                     _initEnvironments = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string FinalEnvironments
+        {
+            get { return _finalEnvironments; }
+            set
+            {
+                if (_finalEnvironments != value)
+                {
+                    _finalEnvironments = value;
                     OnPropertyChanged();
                 }
             }
@@ -156,10 +198,6 @@ namespace P4Verification.ViewModel
                 }
             }
         }
-        public string Output
-        {
-            get; set;
-        }
         public string Input
         {
             get; set;
@@ -174,7 +212,10 @@ namespace P4Verification.ViewModel
         public VerificationViewModel(VerificationModel model)
         {
             Model = model;
-            
+
+            ErrorMessage = "";
+            ErrorBorder = 0;
+
             SelectConds = new SelectCondition();
             TableConds = new TableCondition();
             AssignmentConds = new AssignmentCondition();
@@ -196,18 +237,23 @@ namespace P4Verification.ViewModel
         }
         private void Model_CalculationDone(object sender, CalculationEventArgs e)
         {
-            this.Output = e.ResultFinalEnvs;
-            OnPropertyChanged("Output");
+            this.FinalEnvironments = e.ResultFinalEnvs;
             CalculatedEnvironments = new List<IdEnvironment>();
             this.CalculatedEnvironments = e.ResultEnvs;
-            OnPropertyChanged("CalculatedEnvironments");
             this.InitEnvironments = new ObservableCollection<IdEnvironment>(e.ResultInitEnvs);
-            OnPropertyChanged("InitEnvironments");
         }
 
         private void Model_Error(object sender, ErrorEventArgs e)
         {
-            this.ErrorMessage = e.ErrorString;
+            ErrorMessage = e.ErrorString;
+            if (e.ErrorString.Length > 0)
+            {
+                ErrorBorder = 3;
+            }
+            else
+            {
+                ErrorBorder = 0;
+            }
         }
         private void OnReadInput()
         {
@@ -235,22 +281,32 @@ namespace P4Verification.ViewModel
                 DropConds.Headers.ToString();
 
             ConditionString = tmp;
-            OnPropertyChanged("ConditionString");            
+            OnPropertyChanged("ConditionString");
+
+            Summary = "";
+            GraphToVisualize.Clear();
+            ErrorMessage = "";
+            ErrorBorder = 0;
+            FinalEnvironments = "";
+            CalculatedEnvironments.Clear();
+            InitEnvironments.Clear();
 
             Model.Calculate(Input, ConditionString);
+
         }
         
         private void MakeGraph()
         {
-            if(SelectedInitEnv.EnvId != null)
+            if (SelectedInitEnv != null && SelectedInitEnv.EnvId != null)
             {
                 ErrorMessage = "";
+                ErrorBorder = 0;
                 CreateGraphToVisualize(SelectedInitEnv.EnvId[0]);
             }
             else
             {
                 ErrorMessage = "Válasszon ki egy kezdőkörnyezetet!";
-                OnPropertyChanged("ErrorMessage");
+                ErrorBorder = 3;
             }
         }
 
@@ -258,6 +314,9 @@ namespace P4Verification.ViewModel
         {            
             var g = new P4Graph();
             GraphToVisualize.Clear();
+            int reds = 0;
+            int yellows = 0;
+            int greens = 0;
             
             foreach (var env in CalculatedEnvironments)
             {
@@ -290,12 +349,15 @@ namespace P4Verification.ViewModel
                     {
                         case "NoMatch":
                             leafcolor = new SolidColorBrush(Colors.Yellow);
+                            yellows++;
                             break;
                         case "Match":
                             leafcolor = new SolidColorBrush(Colors.Green);
+                            greens++;
                             break;
                         case "Stuck":
                             leafcolor = new SolidColorBrush(Colors.Red);
+                            reds++;
                             break;
                     }
                     vertices.Add(new P4Vertex(env.LeafEnv) { VertexColor = leafcolor });
@@ -305,7 +367,9 @@ namespace P4Verification.ViewModel
 
             }
             GraphToVisualize = g;          
-
+            Summary = $"Mellékfeltételek nem teljesülése miatt leállt szál: {reds}\n" +
+                $"Lefutott, de egyik végállapottal sem egyező szál: {yellows} \n" +
+                $"Lefutott, és valamely végállapottal egyező szál: {greens}";
         }
     }
     

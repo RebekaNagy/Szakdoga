@@ -41,6 +41,8 @@ namespace P4Verification
         private void ViewModel_ReadInput(object sender, System.EventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.DefaultExt = ".p4";
+            openFileDialog.Filter = "P4 Files|*.p4";
 
             if (openFileDialog.ShowDialog() == true)
             {

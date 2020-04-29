@@ -6,15 +6,19 @@ import System.Environment
 import Debug.Trace
 import System.IO.Unsafe
 ------------------------------------- TYPES
-data Validity =  
-    Valid
+data Validity =
+    None
+    | Valid
     | Invalid
     | Undefined deriving (Show)
 
 instance Eq Validity where
-    (==) Valid Invalid = False
-    (==) Invalid Valid = False
-    (==) _ _ = True
+    (==) Valid Valid = True
+    (==) Invalid Invalid = True
+    (==) None None = True
+    (==) Undefined _ = True    
+    (==) _ Undefined = True    
+    (==) _ _ = False
 
 type Field = (String, Validity)
 
@@ -38,7 +42,7 @@ data Program =
     | Drop 
     | SetHeaderValidity String Validity deriving (Show, Eq)
 
-data SideCondition = SideCon (String, String, String, String, String) | SideCondError deriving (Show, Eq)
+data SideCondition = SideCon ([Validity], [Validity], [Validity], [Validity], [Validity]) | SideCondError deriving (Show, Eq)
 
 type Rule = [IdEnvironment] -> Program -> SideCondition -> Int -> [IdEnvironment]
 ------------------------------------- MAIN VERIFICATION FUNCTION
@@ -111,82 +115,81 @@ prFunc_Table envlist name keys (action:acts) sideconditions@(SideCon (_, tableCo
 
 ------------------------------------- CHECKING FUNCTIONS
 
-check_Drop :: Environment -> String -> Bool
-check_Drop (Env env) dropCondition = True
---    case dropCondition of
---        NoneDrop -> True
---        DropInvalid -> getHeaderValidity "drop" (Env env) == Invalid
---        EveryHeaderValid -> and (map (\(headerName, (headerValidity, fields)) -> if (headerName == "drop" || headerValidity == Valid) then True else False) env)
---        EveryHeaderInvalid -> and (map (\(headerName, (headerValidity, fields)) -> if (headerName == "drop" || headerValidity == Invalid) then True else False) env)
---        EveryFieldValid -> and (concat (map (\(h, (v, fields)) -> map (\(fieldName, fieldValidity) -> if fieldValidity == Valid then True else False) fields) env))
---        EveryFieldInvalid -> and (concat (map (\(h, (v, fields)) -> map (\(fieldName, fieldValidity) -> if fieldValidity == Invalid then True else False) fields) env))
+check_Drop :: Environment -> [Validity] -> Bool
+check_Drop env (None:None:None:[]) = True
+check_Drop env (dropvalidity:fieldsValidity:headersValidity:[]) =
+    (isHeaderValidity "drop" env dropvalidity) && (isdropAllFieldValidity env fieldsValidity) && (isdropAllHeaderValidity env headersValidity)
+    
+check_SetHeader :: Environment -> [Validity] -> String -> Bool
+check_SetHeader env (None:None:[]) headerName = True
+check_SetHeader env (fieldsValidity:headerValidity:[]) headerName = 
+    (isAllFieldsValidity headerName env fieldsValidity) && (isHeaderValidity headerName env headerValidity)
 
-check_SetHeader :: Environment -> String -> String -> Bool
-check_SetHeader (Env env) setHeaderCondition header = True
---    case setHeaderCondition of
---        NoneSetHeader -> True 
---        HeaderValid -> getHeaderValidity header (Env env) == Valid
---        HeaderInvalid -> getHeaderValidity header (Env env) == Invalid
---        FieldsValid -> and (concat (map (\(h, (v, fields)) -> if h == header then (map (\(fieldName, fieldValidity) -> if fieldValidity == Valid then True else False) fields) else [True]) env))
---        FieldsInvalid -> and (concat (map (\(h, (v, fields)) -> if h == header then (map (\(fieldName, fieldValidity) -> if fieldValidity == Invalid then True else False) fields) else [True]) env))
---        EverySValid -> getHeaderValidity header (Env env) == Valid && and (concat (map (\(h, (v, fields)) -> if h == header then (map (\(fieldName, fieldValidity) -> if fieldValidity == Valid then True else False) fields) else [True]) env))
---        EverySInvalid -> getHeaderValidity header (Env env) == Invalid && and (concat (map (\(h, (v, fields)) -> if h == header then (map (\(fieldName, fieldValidity) -> if fieldValidity == Invalid then True else False) fields) else [True]) env))
+check_Assignment :: Environment -> [Validity] -> String -> [String] -> Bool
+check_Assignment env (None:None:None:None:[]) left rights = True
+check_Assignment env (leftfield:leftheader:rightfields:rightheaders:[]) left rights =
+    (isFieldValidity left env leftfield) && (isHeaderValidity left env leftheader) && 
+    (isFieldListValidity rights env rightfields) && (isHeaderListValidity rights env rightheaders)
 
-check_Assignment :: Environment -> String -> String -> [String] -> Bool
-check_Assignment (Env env) assignmentCondition left rights = True
---    case assignmentCondition of
---        NoneAssignment -> True
---        LeftValid -> getValidity left (Env env) == Valid
---        LeftInvalid -> getValidity left (Env env) == Invalid
---        RightValid -> getListValidity (Env env) rights Valid
---        RightInvalid -> getListValidity (Env env) rights Invalid
---        EveryAValid -> (getValidity left (Env env) == Valid) && (getListValidity (Env env) rights Valid)
---        EveryAInvalid -> (getValidity left (Env env) == Invalid) && (getListValidity (Env env) rights Invalid)
+check_Table :: Environment -> [Validity] -> [String] -> Bool
+check_Table env (None:None:[]) keys = True
+check_Table env (fieldValidity:headerValidity:[]) keys = 
+    (isFieldListValidity keys env fieldValidity) && (isHeaderListValidity keys env headerValidity)
 
-check_Table :: Environment -> String -> [String] -> Bool
-check_Table (Env env) tableCondition keys = True
---    case tableCondition of
---        NoneTable -> True
---        KeysValid -> getListValidity (Env env) keys Valid
---        KeysInvalid -> getListValidity (Env env) keys Invalid
-
-check_If :: Environment -> String -> [String] -> Bool
-check_If (Env env) ifCondition conditions = True
---    case ifCondition of
---        NoneIf -> True
---        CondsValid -> getListValidity (Env env) conditions Valid
---        CondsInvalid -> getListValidity (Env env) conditions Invalid
-
+check_If :: Environment -> [Validity] -> [String] -> Bool
+check_If env (None:None:[]) conditions = True
+check_If env (fieldValidity:headerValidity:[]) conditions = 
+    (isFieldListValidity conditions env fieldValidity) && (isHeaderListValidity conditions env headerValidity)
 ------------------------------------- CALCULATING FUNCTIONS
  
-getListValidity :: Environment -> [String] -> Validity -> Bool
-getListValidity environment list validity = and (map (\elem -> if (getValidity elem environment) == validity then True else False) list)
+isdropAllFieldValidity :: Environment -> Validity -> Bool
+isdropAllFieldValidity env None = True
+isdropAllFieldValidity (Env env) validity = and (map (\(hName, (hValidity, fields)) -> helper_isAllFieldsValidity fields validity) env)
 
-fittingRule :: [IdEnvironment] -> Program -> SideCondition -> Int -> [Rule] -> Rule
-fittingRule envlist program sideconditions number [] = (\env ProgError sideconditions number -> prFunc_Skip envlist)
-fittingRule envlist program sideconditions number (rule:xs) 
-    | rule envlist program sideconditions number == [("", Stuck, EnvError)] = fittingRule envlist program sideconditions number xs
-    | otherwise = rule
+isdropAllHeaderValidity :: Environment -> Validity -> Bool
+isdropAllHeaderValidity env None = True
+isdropAllHeaderValidity (Env env) validity = and (map (\(hName, (hValidity, fields)) -> hValidity == validity) env)
 
-getHeaderValidity :: String -> Environment -> Validity
-getHeaderValidity name (Env []) = Undefined
-getHeaderValidity name (Env ((headerName, (headerValidity, fields)):xs))
-    | headerName == name = headerValidity
-    | otherwise = getHeaderValidity name (Env xs)
+isFieldListValidity :: [String] -> Environment -> Validity -> Bool
+isFieldListValidity list env None = True 
+isFieldListValidity list env validity = and (map (\elem -> (isFieldValidity elem env validity)) list)
 
-getValidity :: String -> Environment -> Validity
-getValidity name (Env []) = Undefined
-getValidity name (Env ((headerName, (headerValidity, fields)):xs))
-    | headerName == name = headerValidity
-    | helperResult == Undefined = getValidity name (Env xs)
-    | otherwise = helperResult
-    where helperResult = helper_getValidity name fields
+isHeaderListValidity :: [String] -> Environment -> Validity -> Bool
+isHeaderListValidity list env None = True 
+isHeaderListValidity list env validity = and (map (\elem -> (isHeaderValidity (takeUntil "." elem) env validity)) list)
 
-helper_getValidity :: String -> [Field] -> Validity
-helper_getValidity name [] = Undefined
-helper_getValidity name (field:xs)
-    | fst field == name = snd field
-    | otherwise = helper_getValidity name xs
+isHeaderValidity :: String -> Environment -> Validity -> Bool
+isHeaderValidity name env None = True
+isHeaderValidity name (Env []) validity = False
+isHeaderValidity name (Env ((headerName, (headerValidity, fields)):xs)) validity
+    | headerName == name = headerValidity == validity
+    | otherwise = isHeaderValidity name (Env xs) validity
+
+isFieldValidity :: String -> Environment -> Validity -> Bool
+isFieldValidity name env None = True
+isFieldValidity name (Env []) validity = False
+isFieldValidity name (Env ((headerName, (headerValidity, fields)):xs)) validity
+    | helperResult == None = isFieldValidity name (Env xs) validity
+    | otherwise = helperResult == validity
+    where helperResult = helper_isFieldValidity name fields
+
+helper_isFieldValidity :: String -> [Field] -> Validity
+helper_isFieldValidity name [] = None
+helper_isFieldValidity name ((fieldName, fieldValidity):xs)
+    | fieldName == name = fieldValidity
+    | otherwise = helper_isFieldValidity name xs
+
+isAllFieldsValidity :: String -> Environment -> Validity -> Bool
+isAllFieldsValidity name env None = True
+isAllFieldsValidity name (Env ((headerName, (headerValidity, fields)):xs)) validity
+    | name == headerName = helper_isAllFieldsValidity fields validity
+    | otherwise = isAllFieldsValidity name (Env xs) validity
+
+helper_isAllFieldsValidity :: [Field] -> Validity -> Bool
+helper_isAllFieldsValidity [] validity = True
+helper_isAllFieldsValidity ((fieldName, fieldValidity):xs) validity
+    | fieldValidity == validity = helper_isAllFieldsValidity xs validity
+    | otherwise = False
 
 takeUntil :: String -> String -> String
 takeUntil s [] = [] 
@@ -209,6 +212,13 @@ helper_compareCalWithFinal (id, envtype, env) (finalenv:xs) =
         _ -> helper_compareCalWithFinal (id, envtype, env) xs
 
 ------------------------------------- RULES
+
+fittingRule :: [IdEnvironment] -> Program -> SideCondition -> Int -> [Rule] -> Rule
+fittingRule envlist program sideconditions number [] = (\env ProgError sideconditions number -> prFunc_Skip envlist)
+fittingRule envlist program sideconditions number (rule:xs) 
+    | rule envlist program sideconditions number == [("", Stuck, EnvError)] = fittingRule envlist program sideconditions number xs
+    | otherwise = rule
+
 
 initRules :: [Rule]
 initRules = [
@@ -239,7 +249,7 @@ initRules = [
         ]
 
 empSideCons :: SideCondition
-empSideCons = SideCon ("100", "100", "10000", "100", "1000")
+empSideCons = SideCon ([None, None], [None, None], [None, None, None, None], [None, None], [None, None, None])
 
 exampleEnv :: [Environment]
 exampleEnv = [Env [
