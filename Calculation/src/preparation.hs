@@ -4,6 +4,7 @@ import Data.List
 import Parser
 import Verification
 
+
 ------------------------------------- MAIN CONVERSION FUNCTIONS
 
 mainConversion :: [Statement] -> (([Environment], Environment), ([Program], [Program], [Program]))-> (([IdEnvironment], [Environment]), Program)
