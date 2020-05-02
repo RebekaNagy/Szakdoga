@@ -10,9 +10,9 @@ import System.Environment
 
 main :: IO ()
 main = hspec $ do
-    describe "Fájlok beolvasása" $ do
-        describe "absolute" $ do
-        it "returns the original number when given a positive input" $ do
+    describe "" $ do
+        describe "" $ do
+        it "" $ do
             parseString (files!!0) `shouldBe` parsed
 
 inputfiles :: IO [String]
