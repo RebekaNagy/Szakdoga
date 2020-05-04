@@ -12,7 +12,6 @@ D:\stuff\Szakdoga\Interface\P4Verification\bin\Debug\QuickGraph.xml
 D:\stuff\Szakdoga\Interface\P4Verification\bin\Debug\QuickGraph.Data.xml
 D:\stuff\Szakdoga\Interface\P4Verification\bin\Debug\QuickGraph.Graphviz.xml
 D:\stuff\Szakdoga\Interface\P4Verification\bin\Debug\QuickGraph.Serialization.xml
-D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\P4Verification.csprojAssemblyReference.cache
 D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\View\MainWindow.g.cs
 D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\App.g.cs
 D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\GeneratedInternalTypeHelper.g.cs

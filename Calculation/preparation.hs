@@ -413,6 +413,10 @@ initEnvListToString :: [IdEnvironment] -> String
 initEnvListToString [] = ""
 initEnvListToString ((id, envtype, env):xs) = id++"@" ++(envToString env) ++ "#" ++ (initEnvListToString xs)
 
+finalEnvListToString :: [Environment] -> String
+finalEnvListToString [] = ""
+finalEnvListToString ((env):xs) = (envToString env) ++ "#" ++ (finalEnvListToString xs)
+
 envToString :: Environment -> String
 envToString (Env []) = ""
 envToString (Env (x:xs)) = headerToString x ++ "\n" ++ (envToString (Env xs))

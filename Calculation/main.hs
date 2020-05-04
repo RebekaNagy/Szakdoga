@@ -8,7 +8,7 @@ import System.Environment
 main :: IO String 
 main = do
 --    contents <- getArgs
-    contents <- readFile "file.txt"
+    contents <- readFile "test2.p4"
     let result = parseString (contents)
     mapM print result
     putStrLn ""
@@ -32,7 +32,7 @@ main = do
     putStrLn ""
     putStrLn "ComparedEnvs:"
     mapM print compare
-    let stringo = envListToString verifyenv ++ "&" ++ (show (snd envs)) ++ "&" ++ (show (fst envs))
+    let stringo = envListToString compare ++ "&" ++ (finalEnvListToString (snd envs)) ++ "&" ++ (initEnvListToString (fst (envs)))    
     putStrLn ""
     print stringo
     return strprog

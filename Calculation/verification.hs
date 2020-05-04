@@ -49,7 +49,7 @@ type Rule = [IdEnvironment] -> Program -> SideCondition -> Int -> [IdEnvironment
 
 verifyP4 :: [IdEnvironment] -> Program -> SideCondition -> Int -> [IdEnvironment]
 verifyP4 environmentList program sideconditions number = 
-    ((fittingRule environmentList program sideconditions number initRules) environmentList program sideconditions (number))
+    ((fittingRule environmentList program sideconditions number initRules) environmentList program sideconditions number)
 
 
 ------------------------------------- PROGRAM FUNCTIONS
@@ -61,25 +61,25 @@ prFunc_Drop :: [IdEnvironment] -> SideCondition -> Int -> [IdEnvironment]
 prFunc_Drop envlist (SideCon (_, _, _, _, dropCondition)) number =
     map (\(id, envtype, (Env env)) -> case envtype of
         Stuck -> (id, envtype, (Env env))
-        _ -> if (check_Drop (Env env) dropCondition) then (id++"$drop"++(show number), NoMatch, Env (map (\h@(header, (validity, fields)) -> 
+        _ -> if (check_Drop (Env env) dropCondition) then (id++"$"++(show number)++"drop", NoMatch, Env (map (\h@(header, (validity, fields)) -> 
             if header == "drop" then (header, (Valid, fields)) else h) env)) else (id, Stuck, (Env env))) envlist
 
-prFunc_SetHeaderValidity :: [IdEnvironment] -> String -> Validity -> SideCondition -> [IdEnvironment]
-prFunc_SetHeaderValidity envlist header validity (SideCon (_, _, _, setHeaderCondition, _)) =
+prFunc_SetHeaderValidity :: [IdEnvironment] -> String -> Validity -> SideCondition -> Int ->  [IdEnvironment]
+prFunc_SetHeaderValidity envlist header validity (SideCon (_, _, _, setHeaderCondition, _)) number =
     map (\(id, envtype, (Env env)) -> case envtype of
         Stuck -> (id, envtype, (Env env))
-        _ -> if (check_SetHeader (Env env) setHeaderCondition header) then (id++"$setHeader:"++header, NoMatch, Env (map (\h@(header', (validity', fields)) -> 
+        _ -> if (check_SetHeader (Env env) setHeaderCondition header) then (id++"$"++(show number)++"setHeader:"++header, NoMatch, Env (map (\h@(header', (validity', fields)) -> 
                 if header == header' then (header, (validity, helper_SetHeaderValidity fields)) else h) env)) else (id, Stuck, (Env env))) envlist
 
 helper_SetHeaderValidity :: [Field] -> [Field]
 helper_SetHeaderValidity [] = []
 helper_SetHeaderValidity ((fieldName, fieldValidity):xs) = (fieldName, Invalid) : helper_SetHeaderValidity xs
 
-prFunc_Assignment :: [IdEnvironment] -> String -> [String] -> SideCondition -> [IdEnvironment]
-prFunc_Assignment envlist left rights (SideCon (_, _, assignmentCondition, _, _)) = 
+prFunc_Assignment :: [IdEnvironment] -> String -> [String] -> SideCondition -> Int -> [IdEnvironment]
+prFunc_Assignment envlist left rights (SideCon (_, _, assignmentCondition, _, _)) number = 
     map (\(id, envtype, (Env env)) -> case envtype of
         Stuck -> (id, envtype, (Env env))
-        _ -> if (check_Assignment (Env env) assignmentCondition left rights) then (id++"$assignment:"++left, NoMatch, Env (map (\h@(header, (validity, fields)) -> 
+        _ -> if (check_Assignment (Env env) assignmentCondition left rights) then (id++"$"++(show number)++"assignment:"++left, NoMatch, Env (map (\h@(header, (validity, fields)) -> 
             if header == left then (header, (Valid, fields)) else helper_Assignment h left) env)) else (id, Stuck, (Env env))) envlist
 
 helper_Assignment :: Header -> String -> Header
@@ -88,22 +88,22 @@ helper_Assignment (headerName, (headerValidity, fields)) name =
 
 prFunc_Action :: [IdEnvironment] -> String -> Program -> SideCondition -> Int -> [IdEnvironment]
 prFunc_Action envlist name program sideconditions number = 
-    (verifyP4 (map (\(id, envtype, env) -> (id++"$action:"++name, envtype, env)) envlist) program sideconditions (number+1))
+    (verifyP4 (map (\(id, envtype, env) -> (id++"$"++(show number)++"action:"++name, envtype, env)) envlist) program sideconditions (number+1))
 
 prFunc_If :: [IdEnvironment] -> [String] -> Program -> Program -> SideCondition -> Int -> [IdEnvironment]
 prFunc_If envlist conditions ifprogram elseprogram sideconditions@(SideCon (ifCondition, _, _, _, _)) number= 
     (verifyP4 (map (\(id, envtype, env) -> case envtype of
                         Stuck -> (id, envtype, env)
                         _ -> if (check_If env ifCondition conditions) 
-                            then (id++"$if"++(show number), NoMatch, env) else (id, Stuck, env)) envlist) ifprogram sideconditions (number+1)) 
+                            then (id++"$"++(show number)++"if", NoMatch, env) else (id, Stuck, env)) envlist) ifprogram sideconditions (number+1)) 
                         ++ 
     (verifyP4 (map (\(id, envtype, env) -> case envtype of
                         Stuck -> (id, envtype, env)
                         _ -> if (check_If env ifCondition conditions) 
-                            then (id++"$else"++(show number), NoMatch, env) else (id, Stuck, env)) envlist) elseprogram sideconditions (number+1))
+                            then (id++"$"++(show number)++"else", NoMatch, env) else (id, Stuck, env)) envlist) elseprogram sideconditions (number+1))
 
 prFunc_Seq :: [IdEnvironment] -> Program -> Program -> SideCondition -> Int -> [IdEnvironment]
-prFunc_Seq envlist firstprogram secondprogram sideconditions number = (verifyP4 ((verifyP4 envlist firstprogram sideconditions number)) secondprogram sideconditions number)
+prFunc_Seq envlist firstprogram secondprogram sideconditions number = (verifyP4 ((verifyP4 envlist firstprogram sideconditions number)) secondprogram sideconditions (number+1))
 
 prFunc_Table :: [IdEnvironment] -> String -> [String] -> [Program] -> SideCondition -> Int -> [IdEnvironment]
 prFunc_Table envlist name keys [] sideconditions@(SideCon (_, tableCondition, _, _, _)) number = []
@@ -111,7 +111,7 @@ prFunc_Table envlist name keys (action:acts) sideconditions@(SideCon (_, tableCo
     (verifyP4 newEnvlist action sideconditions number) ++ (prFunc_Table envlist name keys acts sideconditions number) 
     where newEnvlist = (map (\(id, envtype, env) -> case envtype of
                         Stuck -> (id, envtype, env)
-                        _ -> if (check_Table env tableCondition keys) then (id++"$table:"++name, NoMatch, env) else (id, Stuck, env)) envlist)
+                        _ -> if (check_Table env tableCondition keys) then (id++"$"++(show number)++"table:"++name, NoMatch, env) else (id, Stuck, env)) envlist)
 
 ------------------------------------- CHECKING FUNCTIONS
 
@@ -229,10 +229,10 @@ initRules = [
                 Skip -> prFunc_Skip environmentList
                 _ -> [("", Stuck, EnvError)]),
         (\environmentList program sideconditions number -> case program of
-                SetHeaderValidity str v -> (prFunc_SetHeaderValidity environmentList str v sideconditions)
+                SetHeaderValidity str v -> (prFunc_SetHeaderValidity environmentList str v sideconditions number)
                 _ -> [("", Stuck, EnvError)]),
         (\environmentList program sideconditions number -> case program of
-                Assignment str strs -> (prFunc_Assignment environmentList str strs sideconditions)
+                Assignment str strs -> (prFunc_Assignment environmentList str strs sideconditions number)
                 _ -> [("", Stuck, EnvError)]),
         (\environmentList program sideconditions number -> case program of
                 ActCons str pr -> prFunc_Action environmentList str pr sideconditions number

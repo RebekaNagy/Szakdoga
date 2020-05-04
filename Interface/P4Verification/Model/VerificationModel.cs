@@ -11,7 +11,7 @@ namespace P4Verification.Model
         private string _inputString;
         private string _errorString;
         private List<IdEnvironment> _environments;
-        private string _finalenvs;
+        private List<IdEnvironment> _finalenvs;
         private List<IdEnvironment> _initenvs;
         public string InputString
         {
@@ -25,7 +25,7 @@ namespace P4Verification.Model
             }
         }
 
-        public string FinalEnvs
+        public List<IdEnvironment> FinalEnvs
         {
             get { return _finalenvs; }
             private set
@@ -83,13 +83,13 @@ namespace P4Verification.Model
             InputString = "Kód bemásolása.";
             hscalculation = new HaskellCalculation();
             Environments = new List<IdEnvironment>();
-            FinalEnvs = "";
+            FinalEnvs = new List<IdEnvironment>();
             InitEnvs = new List<IdEnvironment>();
         }
 
         public void Calculate(string input, string conds)
         {
-            FinalEnvs = "";
+            FinalEnvs.Clear();
             InitEnvs.Clear();
             Environments.Clear();
             ErrorString = "";
@@ -106,7 +106,7 @@ namespace P4Verification.Model
                     if (parts[0] == "NOERROR")
                     {
                         processEnvs(parts[1]);
-                        FinalEnvs = parts[2];
+                        processFinalEnvs(parts[2]);
                         processInitEnvs(parts[3]);
                     }
                 }
@@ -127,7 +127,7 @@ namespace P4Verification.Model
             OnNewError(ErrorString);
         }
 
-        private void OnCalculationDone(string finalenvs, List<IdEnvironment> initenvs, List<IdEnvironment> envs)
+        private void OnCalculationDone(List<IdEnvironment> finalenvs, List<IdEnvironment> initenvs, List<IdEnvironment> envs)
         {
             CalculationDone?.Invoke(this, new CalculationEventArgs(finalenvs, initenvs, envs));
         }
@@ -172,6 +172,24 @@ namespace P4Verification.Model
                         EnvId = new List<string> {parts[0]},
                         EnvType = "",
                         LeafEnv = parts[1]
+                    });
+                }
+            }
+        }
+
+        private void processFinalEnvs(string envs)
+        {
+            var tmpenvs = envs.Split('#');
+
+            foreach (var tmpenv in tmpenvs)
+            {
+                if (tmpenv != "" || tmpenv != string.Empty)
+                {
+                    FinalEnvs.Add(new IdEnvironment
+                    {
+                        EnvId = new List<string>(),
+                        EnvType = "",
+                        LeafEnv = tmpenv
                     });
                 }
             }

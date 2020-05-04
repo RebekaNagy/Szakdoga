@@ -11,11 +11,13 @@ namespace P4Verification.ViewModel
 {
     public class P4Vertex
     {
+        public string Id { get; set; }
         public string Name { get; set; }        
         public Brush VertexColor { get; set; }
 
-        public P4Vertex(string name)
+        public P4Vertex(string id, string name)
         {
+            Id = id;
             Name = name;
         }
     }

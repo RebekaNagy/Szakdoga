@@ -18,9 +18,9 @@ namespace P4Verification.ViewModel
         private VerificationModel Model;
         private string _errorMessage;
         private int _errorBorder;
-        private List<IdEnvironment> _calculatedEnvironments;
+        private ObservableCollection<IdEnvironment> _calculatedEnvironments;
         private ObservableCollection<IdEnvironment> _initEnvironments;
-        private string _finalEnvironments;
+        private ObservableCollection<IdEnvironment> _finalEnvironments;
         private IdEnvironment _selectedInitEnv;
         private SelectCondition _selectConds;
         private TableCondition _tableConds;
@@ -28,6 +28,7 @@ namespace P4Verification.ViewModel
         private SetHeaderCondition _setHeaderConds;
         private DropCondition _dropConds;
         private string _summary;
+        private string _input;
         
         public string ErrorMessage
         {
@@ -84,7 +85,7 @@ namespace P4Verification.ViewModel
             }
         }
 
-        public List<IdEnvironment> CalculatedEnvironments
+        public ObservableCollection<IdEnvironment> CalculatedEnvironments
         {
             get { return _calculatedEnvironments; }
             set
@@ -110,7 +111,7 @@ namespace P4Verification.ViewModel
             }
         }
 
-        public string FinalEnvironments
+        public ObservableCollection<IdEnvironment> FinalEnvironments
         {
             get { return _finalEnvironments; }
             set
@@ -200,21 +201,33 @@ namespace P4Verification.ViewModel
         }
         public string Input
         {
-            get; set;
+            get { return _input; }
+            set
+            {
+                if (_input != value)
+                {
+                    _input = value;
+                    OnPropertyChanged();
+                    ResetEverything();
+                }
+            }
         }
 
         public event EventHandler ReadInput;
 
         public DelegateCommand CalculateCommand { get; set; }
         public DelegateCommand ReadInputCommand { get; set; }
-
         public DelegateCommand MakeGraphCommand { get; set; }
+        public DelegateCommand ResetCondsCommand { get; set; }
+
+        public DelegateCommand ResetEnvironmentsCommand { get; set; }
         public VerificationViewModel(VerificationModel model)
         {
             Model = model;
 
             ErrorMessage = "";
             ErrorBorder = 0;
+            Summary = "";
 
             SelectConds = new SelectCondition();
             TableConds = new TableCondition();
@@ -224,8 +237,9 @@ namespace P4Verification.ViewModel
 
             GraphToVisualize = new P4Graph();
 
-            CalculatedEnvironments = new List<IdEnvironment>();
+            CalculatedEnvironments = new ObservableCollection<IdEnvironment>();
             InitEnvironments = new ObservableCollection<IdEnvironment>();
+            FinalEnvironments = new ObservableCollection<IdEnvironment>();
             SelectedInitEnv = new IdEnvironment();
             
             model.CalculationDone += new EventHandler<CalculationEventArgs>(Model_CalculationDone);
@@ -234,13 +248,14 @@ namespace P4Verification.ViewModel
             CalculateCommand = new DelegateCommand(param => StartCalculation());
             ReadInputCommand = new DelegateCommand(param => OnReadInput());
             MakeGraphCommand = new DelegateCommand(param => MakeGraph());
+            ResetCondsCommand = new DelegateCommand(param => ResetConds());
+            ResetEnvironmentsCommand = new DelegateCommand(param => ResetEverything());
         }
         private void Model_CalculationDone(object sender, CalculationEventArgs e)
         {
-            this.FinalEnvironments = e.ResultFinalEnvs;
-            CalculatedEnvironments = new List<IdEnvironment>();
-            this.CalculatedEnvironments = e.ResultEnvs;
-            this.InitEnvironments = new ObservableCollection<IdEnvironment>(e.ResultInitEnvs);
+            FinalEnvironments = new ObservableCollection<IdEnvironment>(e.ResultFinalEnvs);
+            CalculatedEnvironments = new ObservableCollection<IdEnvironment>(e.ResultEnvs);
+            InitEnvironments = new ObservableCollection<IdEnvironment>(e.ResultInitEnvs);
         }
 
         private void Model_Error(object sender, ErrorEventArgs e)
@@ -257,6 +272,7 @@ namespace P4Verification.ViewModel
         }
         private void OnReadInput()
         {
+            ResetEverything();
             ReadInput?.Invoke(this, EventArgs.Empty);
         }
 
@@ -287,7 +303,7 @@ namespace P4Verification.ViewModel
             GraphToVisualize.Clear();
             ErrorMessage = "";
             ErrorBorder = 0;
-            FinalEnvironments = "";
+            FinalEnvironments.Clear();
             CalculatedEnvironments.Clear();
             InitEnvironments.Clear();
 
@@ -301,7 +317,7 @@ namespace P4Verification.ViewModel
             {
                 ErrorMessage = "";
                 ErrorBorder = 0;
-                CreateGraphToVisualize(SelectedInitEnv.EnvId[0]);
+                CreateGraphToVisualize(SelectedInitEnv);
             }
             else
             {
@@ -310,7 +326,7 @@ namespace P4Verification.ViewModel
             }
         }
 
-        private void CreateGraphToVisualize(string selectedEnvId)
+        private void CreateGraphToVisualize(IdEnvironment selectedIdEnv)
         {            
             var g = new P4Graph();
             GraphToVisualize.Clear();
@@ -320,16 +336,24 @@ namespace P4Verification.ViewModel
             
             foreach (var env in CalculatedEnvironments)
             {
-                if(env.EnvId[0] == selectedEnvId)
+                if(env.EnvId[0] == selectedIdEnv.EnvId[0])
                 {
                     var count = env.EnvId.Count();
                     List<P4Vertex> vertices = new List<P4Vertex>();
 
                     for (int i = 0; i < count; i++)
                     {
-                        vertices.Add(new P4Vertex(env.EnvId[i]));
+                        if(i == 0)
+                        {
+                            vertices.Add(new P4Vertex(env.EnvId[i], selectedIdEnv.LeafEnv));
+                        }
+                        else
+                        {
+                            var tmpName = env.EnvId[i].TrimStart("0123456789".ToCharArray());
+                            vertices.Add(new P4Vertex(env.EnvId[i], tmpName));
+                        }
                         vertices[i].VertexColor = new SolidColorBrush(Colors.White);
-                        P4Vertex result = g.Vertices.Where(x => x.Name == vertices[i].Name).FirstOrDefault();
+                        P4Vertex result = g.Vertices.Where(x => x.Id == vertices[i].Id).FirstOrDefault();
                         if (result == null)
                         {
                             g.AddVertex(vertices[i]);
@@ -360,7 +384,7 @@ namespace P4Verification.ViewModel
                             reds++;
                             break;
                     }
-                    vertices.Add(new P4Vertex(env.LeafEnv) { VertexColor = leafcolor });
+                    vertices.Add(new P4Vertex(env.LeafEnv, env.LeafEnv) { VertexColor = leafcolor });
                     g.AddVertex(vertices[count]);
                     g.AddEdge(new Edge<P4Vertex>(vertices[count - 1], vertices[count]));
                 }                  
@@ -370,6 +394,48 @@ namespace P4Verification.ViewModel
             Summary = $"Mellékfeltételek nem teljesülése miatt leállt szál: {reds}\n" +
                 $"Lefutott, de egyik végállapottal sem egyező szál: {yellows} \n" +
                 $"Lefutott, és valamely végállapottal egyező szál: {greens}";
+        }
+
+        private void ResetConds()
+        {
+            SelectConds.CondsField = 0;
+            SelectConds.CondsHeader = 0;
+
+            OnPropertyChanged("SelectedConds");
+
+            TableConds.KeysField = 0;
+            TableConds.KeysHeader = 0;
+
+            OnPropertyChanged("TableConds");
+
+            AssignmentConds.LeftField = 0;
+            AssignmentConds.LeftHeader = 0;
+            AssignmentConds.RightField = 0;
+            AssignmentConds.RightHeader = 0;
+
+            OnPropertyChanged("AssignmentConds");
+
+            SetHeaderConds.Fields = 0;
+            SetHeaderConds.Header = 0;
+
+            OnPropertyChanged("SetHeaderConds");
+
+            DropConds.DropValidity = 0;
+            DropConds.Fields = 0;
+            DropConds.Headers = 0;
+
+            OnPropertyChanged("DropConds");
+        }
+        
+        private void ResetEverything()
+        {
+            ErrorMessage = "";
+            ErrorBorder = 0;
+            Summary = "";
+
+            CalculatedEnvironments.Clear();
+            InitEnvironments.Clear();
+            FinalEnvironments.Clear();
         }
     }
     
