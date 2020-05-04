@@ -44,8 +44,8 @@
             AcceptsTab="True"
             Background="#FFD4D4D4"
             UndoLimit="500"/>
-        <Border BorderBrush="#FFABADB3" Grid.Column="0" Grid.Row="1" BorderThickness="3" Margin="0.2,0,1.8,9.6">
-            <Grid Grid.Column="0" Grid.Row="1" Margin="-0.2,-0.2,7.2,30.6">
+        <Border BorderBrush="#FFABADB3" Grid.Column="0" Grid.Row="1" BorderThickness="3" Margin="10,0.4,493,9.2" Grid.ColumnSpan="2">
+            <Grid Grid.Column="0" Grid.Row="1" Margin="-3.2,6.8,6.6,6.8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition/>
                     <ColumnDefinition/>
@@ -86,7 +86,7 @@
                     HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="6,2.8,12,2.4" Width="86"/>
                 <Label Grid.Row="10" Grid.Column="0" Content="Fejlécek elvetése" 
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
-                    HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="-5,2.4,11,2.8" Width="98"/>
+                    HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="-2,4.8,1.6,2" Width="98"/>
 
                 <Label Content="Feltételek: mező" Grid.Column="1" Grid.Row="1"
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
@@ -95,7 +95,7 @@
                         VerticalAlignment="Center" IsEnabled="{Binding SelectConds.IsMainCheck}"
                         ItemsSource="{Binding SelectConds.CondsCheck}"
                         SelectedIndex="{Binding SelectConds.CondsField}" Height="23" Margin="3,4.6,0,4.4"/>
-                <Label Content="Feltételek: Fejléc" Grid.Column="2" Grid.Row="1"
+                <Label Content="Feltételek: fejléc" Grid.Column="2" Grid.Row="1"
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
                     HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="6.8,2.8,0.4,2.4" Width="108"/>
                 <ComboBox Grid.Column="2" Grid.Row="2"
@@ -139,9 +139,9 @@
                         VerticalAlignment="Center" IsEnabled="{Binding AssignmentConds.IsMainCheck}"
                         ItemsSource="{Binding AssignmentConds.CondsCheck}"
                         SelectedIndex="{Binding AssignmentConds.RightField}" Height="23" Margin="3,4.6,0,4.4"/>
-                <Label Content="Jobb o. fejlécek" Grid.Column="4" Grid.Row="5"
+                <Label Content="Jobb o. fejlécek" Grid.Column="3" Grid.Row="5"
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
-                    HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="10.2,5,10,4.2" Width="95"/>
+                    HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="93.4,3.4,-0.2,2.6" Width="94" Grid.ColumnSpan="2"/>
                 <ComboBox Grid.Column="4" Grid.Row="6"
                         VerticalAlignment="Center" IsEnabled="{Binding AssignmentConds.IsMainCheck}"
                         ItemsSource="{Binding AssignmentConds.CondsCheck}"
@@ -231,7 +231,7 @@
             HorizontalAlignment="Left" 
             Content="Alaphelyzetbe állítás" Grid.Row="1"/>
         <zoom:ZoomControl Grid.Column="1" Grid.Row="1"
-                    Margin="10.2,10.2,9.6,10.4" Grid.ColumnSpan="2">
+                    Margin="26.4,10.4,9.6,10.2" Grid.ColumnSpan="2">
             <viewModel:P4GraphLayout x:Name="p4graphLayout" 
                                 Graph="{Binding GraphToVisualize}"
                                 LayoutAlgorithmType="Tree"

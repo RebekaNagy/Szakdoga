@@ -422,9 +422,12 @@ envToString (Env []) = ""
 envToString (Env (x:xs)) = headerToString x ++ "\n" ++ (envToString (Env xs))
 
 headerToString :: Header -> String
-headerToString (header, (validity, fields)) = "fejléc: (" ++ header ++ ", " ++ (show validity) ++ ")\n mezők:" ++ fieldsToString fields
+headerToString (header, (validity, fields)) =
+    case header of 
+        "drop" -> header ++ ": " ++ (show validity)
+        _ -> header ++ " fejléc: " ++ (show validity) ++ "\n" ++ header ++ " mezői:\n" ++ fieldsToString fields
 
 fieldsToString :: [Field] -> String
 fieldsToString [] = ""
-fieldsToString ((name, validity):xs) = "(" ++ name ++ ", " ++ (show validity) ++ ") " ++ (fieldsToString xs) 
+fieldsToString ((name, validity):xs) = name ++ ": " ++ (show validity) ++ "; " ++ (fieldsToString xs) 
 

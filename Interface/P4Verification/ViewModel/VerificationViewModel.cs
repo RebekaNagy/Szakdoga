@@ -401,7 +401,7 @@ namespace P4Verification.ViewModel
             SelectConds.CondsField = 0;
             SelectConds.CondsHeader = 0;
 
-            OnPropertyChanged("SelectedConds");
+            OnPropertyChanged("SelectConds");
 
             TableConds.KeysField = 0;
             TableConds.KeysHeader = 0;

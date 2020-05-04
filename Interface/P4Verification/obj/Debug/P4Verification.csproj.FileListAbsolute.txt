@@ -24,3 +24,4 @@ D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\P4Verification.csproj.Gener
 D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\P4Verification.csproj.CopyComplete
 D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\P4Verification.exe
 D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\P4Verification.pdb
+D:\stuff\Szakdoga\Interface\P4Verification\obj\Debug\P4Verification.csprojAssemblyReference.cache
