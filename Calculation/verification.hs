@@ -37,7 +37,7 @@ data Program =
     | Seq Program Program
     | If [String] Program Program
     | Table String [String] [Program]
-    | ActCons String Program
+    | Action String Program
     | Assignment String [String]
     | Drop 
     | SetHeaderValidity String Validity deriving (Show, Eq)
@@ -242,7 +242,7 @@ initRules = [
                 Assignment str strs -> (prFunc_Assignment environmentList str strs sideconditions number)
                 _ -> [("", Stuck, EnvError)]),
         (\environmentList program sideconditions number -> case program of
-                ActCons str pr -> prFunc_Action environmentList str pr sideconditions number
+                Action str pr -> prFunc_Action environmentList str pr sideconditions number
                 _ -> [("", Stuck, EnvError)]),
         (\environmentList program sideconditions number -> case program of
                 If str pr1 pr2 -> prFunc_If environmentList str pr1 pr2 sideconditions number

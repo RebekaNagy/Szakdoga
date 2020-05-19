@@ -196,7 +196,7 @@ controlConversion (x:xs) ((init, final),(actions, tables, prog)) =
         Error -> ((init, final),(actions, tables, [ProgError]))
         ParserAction actionName (ParserSeq acts) -> case validActions of
             ProgError -> ((init, final),(actions, tables, [ProgError]))
-            _ -> controlConversion xs ((init, final), ((actions ++ [ActCons actionName validActions]), tables, prog))
+            _ -> controlConversion xs ((init, final), ((actions ++ [Action actionName validActions]), tables, prog))
             where validActions = (actionConversion acts)
         ParserTable tableName (Keys k) (Acts act) -> controlConversion xs ((init, final), (tableConversion x (actions, tables, prog)))
         Apply (ParserSeq block) -> controlConversion xs ((init, (emitConversion block final)), (actions, tables, (prog ++ [applyConversion block actions tables])))
@@ -248,11 +248,11 @@ actsConversion :: [String] -> [Program] -> [Program]
 actsConversion [] actions = []
 actsConversion (x:xs) actions = 
     case x of
-        "NoAction" -> (ActCons "NoAction" Skip) : (actsConversion xs actions)
+        "NoAction" -> (Action "NoAction" Skip) : (actsConversion xs actions)
         _ -> case action of
             [] -> [] ++ (actsConversion xs actions)
             _ -> (head action) : (actsConversion xs actions)
-        where action = (filter (\(ActCons id pr) -> id == x) actions)
+        where action = (filter (\(Action id pr) -> id == x) actions)
 
 ------------------------------------- APPLY CONVERSION FUNCTIONS
 applyConversion :: [Statement] -> [Program] -> [Program] -> Program
@@ -309,7 +309,7 @@ actionCallConversion :: String -> [Program] -> Program
 actionCallConversion actionName actions
     | result == [] = Skip
     | otherwise = head result
-    where result = (filter (\(ActCons id pr) -> id == actionName) actions)
+    where result = (filter (\(Action id pr) -> id == actionName) actions)
 
 ------------------------------------- SIDECONDITION CONVERSION FUNCTIONS
 
@@ -399,7 +399,7 @@ dataToString (Skip) = "Skip "
 dataToString (Seq pr1 pr2) = "Seq " ++ dataToString pr1 ++ " " ++ dataToString pr2
 dataToString (If conds pr1 pr2) = "If " ++ (unwords conds) ++ dataToString pr1 ++ dataToString pr2  ++ " "
 dataToString (Table str keys acts) = "Table " ++ str ++ " " ++ (unwords keys) ++ " " ++ (unwords (map (\x -> dataToString x) acts))
-dataToString (ActCons str pr) = "Action " ++ str ++ " " ++ dataToString pr
+dataToString (Action str pr) = "Action " ++ str ++ " " ++ dataToString pr
 dataToString (Assignment str strs) = "Assignment " ++ str ++ (unwords strs)
 dataToString (Drop) = "Drop "
 dataToString (SetHeaderValidity str v) = "SetHeader " ++ str ++ " " ++ (show v)
