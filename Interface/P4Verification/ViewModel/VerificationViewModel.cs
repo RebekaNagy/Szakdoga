@@ -146,6 +146,7 @@ namespace P4Verification.ViewModel
             {
                 if (_selectConds != value)
                 {
+                    ResetEverything();
                     _selectConds = value;
                     OnPropertyChanged();
                 }
@@ -214,7 +215,6 @@ namespace P4Verification.ViewModel
         }
 
         public event EventHandler ReadInput;
-
         public DelegateCommand CalculateCommand { get; set; }
         public DelegateCommand ReadInputCommand { get; set; }
         public DelegateCommand MakeGraphCommand { get; set; }
@@ -234,6 +234,11 @@ namespace P4Verification.ViewModel
             AssignmentConds = new AssignmentCondition();
             SetHeaderConds = new SetHeaderCondition();
             DropConds = new DropCondition();
+            SelectConds.ConditionChanged += new EventHandler<ConditionEventArgs>(CondChanged);
+            TableConds.ConditionChanged += new EventHandler<ConditionEventArgs>(CondChanged);
+            AssignmentConds.ConditionChanged += new EventHandler<ConditionEventArgs>(CondChanged);
+            SetHeaderConds.ConditionChanged += new EventHandler<ConditionEventArgs>(CondChanged);
+            DropConds.ConditionChanged += new EventHandler<ConditionEventArgs>(CondChanged);
 
             GraphToVisualize = new P4Graph();
 
@@ -242,14 +247,19 @@ namespace P4Verification.ViewModel
             FinalEnvironments = new ObservableCollection<IdEnvironment>();
             SelectedInitEnv = new IdEnvironment();
             
-            model.CalculationDone += new EventHandler<CalculationEventArgs>(Model_CalculationDone);
-            model.Error += new EventHandler<ErrorEventArgs>(Model_Error);
+            Model.CalculationDone += new EventHandler<CalculationEventArgs>(Model_CalculationDone);
+            Model.Error += new EventHandler<ErrorEventArgs>(Model_Error);
 
             CalculateCommand = new DelegateCommand(param => StartCalculation());
             ReadInputCommand = new DelegateCommand(param => OnReadInput());
             MakeGraphCommand = new DelegateCommand(param => MakeGraph());
             ResetCondsCommand = new DelegateCommand(param => ResetConds());
             ResetEnvironmentsCommand = new DelegateCommand(param => ResetEverything());
+        }
+
+        private void CondChanged(object sender, ConditionEventArgs e)
+        {
+            ResetEverything();
         }
         private void Model_CalculationDone(object sender, CalculationEventArgs e)
         {
@@ -433,9 +443,9 @@ namespace P4Verification.ViewModel
             ErrorBorder = 0;
             Summary = "";
 
-            CalculatedEnvironments.Clear();
-            InitEnvironments.Clear();
-            FinalEnvironments.Clear();
+            if (CalculatedEnvironments != null) CalculatedEnvironments.Clear();
+            if (InitEnvironments != null) InitEnvironments.Clear();
+            if (FinalEnvironments != null) FinalEnvironments.Clear();
         }
     }
     

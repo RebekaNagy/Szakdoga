@@ -92,14 +92,14 @@
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
                     HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="6.8,2.8,0.4,2.4" Width="108"/>
                 <ComboBox Grid.Column="1" Grid.Row="2"
-                        VerticalAlignment="Center" IsEnabled="{Binding SelectConds.IsMainCheck}"
+                        VerticalAlignment="Center"
                         ItemsSource="{Binding SelectConds.CondsCheck}"
                         SelectedIndex="{Binding SelectConds.CondsField}" Height="23" Margin="3,4.6,0,4.4"/>
                 <Label Content="Feltételek: fejléc" Grid.Column="2" Grid.Row="1"
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
                     HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="6.8,2.8,0.4,2.4" Width="108"/>
                 <ComboBox Grid.Column="2" Grid.Row="2"
-                        VerticalAlignment="Center" IsEnabled="{Binding SelectConds.IsMainCheck}"
+                        VerticalAlignment="Center"
                         ItemsSource="{Binding SelectConds.CondsCheck}"
                         SelectedIndex="{Binding SelectConds.CondsHeader}" Height="23" Margin="3,4.6,0,4.4"/>
 
@@ -107,14 +107,14 @@
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
                     HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="9.8,5,10.4,4.2" Width="95"/>
                 <ComboBox Grid.Column="1" Grid.Row="4"
-                        VerticalAlignment="Center" IsEnabled="{Binding TableConds.IsMainCheck}"
+                        VerticalAlignment="Center"
                         ItemsSource="{Binding TableConds.CondsCheck}"
                         SelectedIndex="{Binding TableConds.KeysField}" Height="23" Margin="3,4.6,0,4.4"/>
                 <Label Content="Kulcsok: fejléc" Grid.Column="2" Grid.Row="3"
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
                     HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="9.6,5,9.6,4.2" Width="96"/>
                 <ComboBox Grid.Column="2" Grid.Row="4"
-                        VerticalAlignment="Center" IsEnabled="{Binding TableConds.IsMainCheck}"
+                        VerticalAlignment="Center"
                         ItemsSource="{Binding TableConds.CondsCheck}"
                         SelectedIndex="{Binding TableConds.KeysHeader}" Height="23" Margin="3,4.6,0,4.4"/>
 
@@ -122,28 +122,28 @@
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
                     HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="9.8,5,10.4,4.2" Width="95"/>
                 <ComboBox Grid.Column="1" Grid.Row="6"
-                        VerticalAlignment="Center" IsEnabled="{Binding AssignmentConds.IsMainCheck}"
+                        VerticalAlignment="Center"
                         ItemsSource="{Binding AssignmentConds.CondsCheck}"
                         SelectedIndex="{Binding AssignmentConds.LeftField}" Height="23" Margin="3,4.6,0,4.4"/>
                 <Label Content="Bal o. fejléc" Grid.Column="2" Grid.Row="5"
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
                     HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="9.6,5,9.6,4.2" Width="96"/>
                 <ComboBox Grid.Column="2" Grid.Row="6"
-                        VerticalAlignment="Center" IsEnabled="{Binding AssignmentConds.IsMainCheck}"
+                        VerticalAlignment="Center"
                         ItemsSource="{Binding AssignmentConds.CondsCheck}"
                         SelectedIndex="{Binding AssignmentConds.LeftHeader}" Height="23" Margin="3,4.6,0,4.4"/>
                 <Label Content="Jobb o. mezők" Grid.Column="3" Grid.Row="5"
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
                     HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="10.4,5,9.8,4.2" Width="95"/>
                 <ComboBox Grid.Column="3" Grid.Row="6"
-                        VerticalAlignment="Center" IsEnabled="{Binding AssignmentConds.IsMainCheck}"
+                        VerticalAlignment="Center"
                         ItemsSource="{Binding AssignmentConds.CondsCheck}"
                         SelectedIndex="{Binding AssignmentConds.RightField}" Height="23" Margin="3,4.6,0,4.4"/>
                 <Label Content="Jobb o. fejlécek" Grid.Column="3" Grid.Row="5"
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
                     HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="93.4,3.4,-0.2,2.6" Width="94" Grid.ColumnSpan="2"/>
                 <ComboBox Grid.Column="4" Grid.Row="6"
-                        VerticalAlignment="Center" IsEnabled="{Binding AssignmentConds.IsMainCheck}"
+                        VerticalAlignment="Center"
                         ItemsSource="{Binding AssignmentConds.CondsCheck}"
                         SelectedIndex="{Binding AssignmentConds.RightHeader}" Height="23" Margin="3,4.6,0,4.4"/>
 
@@ -151,14 +151,14 @@
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
                     HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="9.8,4.6,10.4,3.8" Width="95"/>
                 <ComboBox Grid.Column="1" Grid.Row="8"
-                        VerticalAlignment="Center" IsEnabled="{Binding SetHeaderConds.IsMainCheck}"
+                        VerticalAlignment="Center"
                         ItemsSource="{Binding SetHeaderConds.CondsCheck}"
                         SelectedIndex="{Binding SetHeaderConds.Fields}" Height="23" Margin="3,4.6,0,4.4"/>
                 <Label Content="Fejléc" Grid.Column="2" Grid.Row="7"
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
                     HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="28,4.6,22.2,3.8" Width="65"/>
                 <ComboBox Grid.Column="2" Grid.Row="8"
-                        VerticalAlignment="Center" IsEnabled="{Binding SetHeaderConds.IsMainCheck}"
+                        VerticalAlignment="Center"
                         ItemsSource="{Binding SetHeaderConds.CondsCheck}"
                         SelectedIndex="{Binding SetHeaderConds.Header}" Height="23" Margin="3,4.6,0,4.4"/>
 
@@ -166,21 +166,21 @@
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
                     HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="28,4.6,22.2,3.8" Width="65"/>
                 <ComboBox Grid.Column="1" Grid.Row="10"
-                        VerticalAlignment="Center" IsEnabled="{Binding DropConds.IsMainCheck}"
+                        VerticalAlignment="Center"
                         ItemsSource="{Binding DropConds.CondsCheck}"
                         SelectedIndex="{Binding DropConds.DropValidity}" Height="23" Margin="3,4.6,0,4.4"/>
                 <Label Content="Minden mező" Grid.Column="2" Grid.Row="9"
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
                     HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="9.6,4.8,9.6,4.4" Width="96"/>
                 <ComboBox Grid.Column="2" Grid.Row="10"
-                        VerticalAlignment="Center" IsEnabled="{Binding DropConds.IsMainCheck}"
+                        VerticalAlignment="Center"
                         ItemsSource="{Binding DropConds.CondsCheck}"
                         SelectedIndex="{Binding DropConds.Fields}" Height="23" Margin="3,4.6,0,4.4"/>
                 <Label Content="Minden fejléc" Grid.Column="3" Grid.Row="9"
                     VerticalAlignment="Center" VerticalContentAlignment="Center"
                     HorizontalAlignment="Center" HorizontalContentAlignment="Center" Height="26" Margin="10.4,4.8,9.8,4.4" Width="95"/>
                 <ComboBox Grid.Column="3" Grid.Row="10"
-                        VerticalAlignment="Center" IsEnabled="{Binding DropConds.IsMainCheck}"
+                        VerticalAlignment="Center"
                         ItemsSource="{Binding DropConds.CondsCheck}"
                         SelectedIndex="{Binding DropConds.Headers}" Height="23" Margin="3,4.6,0,4.4"/>
             </Grid>
