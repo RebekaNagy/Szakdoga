@@ -219,7 +219,6 @@ namespace P4Verification.ViewModel
         public DelegateCommand ReadInputCommand { get; set; }
         public DelegateCommand MakeGraphCommand { get; set; }
         public DelegateCommand ResetCondsCommand { get; set; }
-
         public DelegateCommand ResetEnvironmentsCommand { get; set; }
         public VerificationViewModel(VerificationModel model)
         {
