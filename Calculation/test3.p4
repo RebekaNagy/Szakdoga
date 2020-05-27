@@ -5,10 +5,18 @@ header ethernet_t {
 }
 
 header ipv4_t {
-    bit<8>    ttl;
-    bit<16>   hdrChecksum;
-    bit<32>   srcAddr;
-    bit<32>   dstAddr;
+    bit<4>  version;
+    bit<4>  ihl;
+    bit<8>  diffserv;
+    bit<16> totalLen;
+    bit<16> identification;
+    bit<3>  flags;
+    bit<13> fragOffset;
+    bit<8>  ttl;
+    bit<8>  protocol;
+    bit<16> hdrChecksum;
+    bit<32> srcAddr;
+    bit<32> dstAddr;
 }
 
 struct headers {
@@ -27,7 +35,10 @@ parser MyParser(packet_in packet,
 
 	state parse_ethernet {
 		packet.extract(hdr.ethernet);
-		transition parse_ipv4;
+        transition select(hdr.ethernet.etherType) {
+            ETHERTYPE_IPV4: parse_ipv4;
+            default: accept;
+        }
 	}
 	
     state parse_ipv4 {
@@ -63,14 +74,29 @@ control MyIngress(inout headers hdr,
         size = 1024;
         default_action = drop();
     }
+
+    action my_drop() {
+        mark_to_drop(stdmeta);
+    }
+    action rewrite_mac(bit<48> smac) {
+        hdr.ethernet.srcAddr = smac;
+    }
+    table send_frame {
+        key = {
+            hdr.ethernet.dstAddr: exact;
+        }
+        actions = {
+            rewrite_mac;
+            my_drop;
+        }
+        default_action = my_drop;
+    }
     
     apply {
         if (hdr.ipv4.isValid()) {
-            if (hdr.ipv4.isValid()) {
-                ipv4_lpm.apply();
-                ipv4_lpm.apply();
-            }
+            ipv4_lpm.apply();
         }
+        send_fram.apply();
     }
 }
 

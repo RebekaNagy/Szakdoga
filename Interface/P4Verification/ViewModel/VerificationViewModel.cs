@@ -328,6 +328,11 @@ namespace P4Verification.ViewModel
                 ErrorBorder = 0;
                 CreateGraphToVisualize(SelectedInitEnv);
             }
+            else if(InitEnvironments.Count() == 0)
+            {
+                ErrorMessage = "A gráf kirajzolása előtt verifikálja a programot!";
+                ErrorBorder = 3;
+            }
             else
             {
                 ErrorMessage = "Válasszon ki egy kezdőkörnyezetet!";

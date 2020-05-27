@@ -27,7 +27,10 @@ parser MyParser(packet_in packet,
 
 	state parse_ethernet {
 		packet.extract(hdr.ethernet);
-		transition parse_ipv4;
+        transition select(hdr.ethernet.etherType) {
+            ETHERTYPE_IPV4: parse_ipv4;
+            default: accept;
+        }
 	}
 	
     state parse_ipv4 {
@@ -66,7 +69,6 @@ control MyIngress(inout headers hdr,
     
     apply {
         if (hdr.ipv4.ttl.isValid()) {
-            ipv4_lpm.apply();
             ipv4_lpm.apply();
         }
     }

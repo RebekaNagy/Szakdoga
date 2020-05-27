@@ -8,7 +8,7 @@ import System.Environment
 main :: IO String 
 main = do
 --    contents <- getArgs
-    contents <- readFile "test2.p4"
+    contents <- readFile "test3.p4"
     let result = parseString (contents)
     mapM print result
     putStrLn ""

@@ -4,7 +4,6 @@ import Data.List
 import Parser
 import Verification
 
-
 ------------------------------------- MAIN CONVERSION FUNCTIONS
 
 mainConversion :: [Statement] -> (([Environment], Environment), ([Program], [Program], [Program]))-> (([IdEnvironment], [Environment]), Program)
@@ -315,7 +314,7 @@ actionCallConversion actionName actions
 
 sideConditionConversion :: String -> SideCondition
 sideConditionConversion str
-    | ((length ifcond == 2) && (length tablecond == 2) && (length assignmentcond == 4) && (length setheadercond == 2) && (length dropcond == 3)) = 
+    | ((length ifcond == 2) && (length tablecond == 2) && (length assignmentcond == 4) && (length setheadercond == 2) && (length dropcond == 3)) && numbers = 
         SideCon (checkToV ifcond, checkToV tablecond, checkToV assignmentcond, checkToV setheadercond, checkToV dropcond)
     | otherwise = SideCondError
     where {
@@ -323,7 +322,12 @@ sideConditionConversion str
         tablecond = takeUntil "&" (drop 1 (dropWhile (/= '&') str));
         assignmentcond = takeUntil "&" (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') str))));
         setheadercond = takeUntil "&" (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') str))))));
-        dropcond = takeUntil "&" (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') str))))))))
+        dropcond = takeUntil "&" (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') (drop 1 (dropWhile (/= '&') str))))))));
+        numbers = and ((map (\x -> x == '0' || x == '1' || x == '2') dropcond) 
+                    ++ (map (\x -> x == '0' || x == '1' || x == '2') setheadercond) 
+                    ++ (map (\x -> x == '0' || x == '1' || x == '2') assignmentcond) 
+                    ++ (map (\x -> x == '0' || x == '1' || x == '2') tablecond) 
+                    ++ (map (\x -> x == '0' || x == '1' || x == '2') ifcond))
     }
 
 checkToV :: String -> [Validity]

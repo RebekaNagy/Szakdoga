@@ -7,8 +7,8 @@ header ethernet_t {
 header ipv4_t {
     bit<8>    ttl;
     bit<16>   hdrChecksum;
-    bit<32>   srcAddr;
-    bit<32>   dstAddr;
+    bit<32>   srcAddr
+    bit<32>   dstAddr
 }
 
 struct headers {
@@ -65,7 +65,9 @@ control MyIngress(inout headers hdr,
     }
     
     apply {
-        ipv4_lpm.apply();
+        if (hdr.ipv4.isValid()) {
+            ipv4_lpm.apply();
+        }
     }
 }
 
