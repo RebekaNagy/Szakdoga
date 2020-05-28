@@ -1,7 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
 module Calculation () where
-import Verification
+import Checking
 import Parser
 import Preparation
 import Data.Word
@@ -15,11 +15,11 @@ helpCalculate program conditions =
     case (fst(fst prepared)) of
         [("", Stuck, EnvError)] -> "A parser vagy deparser helytelen, így nem sikerült a környezetek megfelelő generálása.&" 
         _ -> case (snd prepared) of
-            EmptyProg -> "A program nem tartalmaz verifikálásra alkalmas részt.&"
+            EmptyProg -> "A program nem tartalmaz ellenőrzésre alkalmas részt.&"
             ProgError -> "A program szintaktikailag helytelen, vagy a vizsgált résznyelven kívül esik.&"
             _ -> case sidecons of
                 SideCondError -> "Hiba a mellékfeltételek generálásakor, vagy átadásakor.&"
-                _ -> "NOERROR&" ++ envListToString (compareCalculatedWithFinal (verifyP4 (fst (fst prepared)) (snd prepared) sidecons 0) (snd (fst prepared))) ++ "&" ++ (finalEnvListToString (snd (fst prepared))) ++ "&" ++ (initEnvListToString (fst (fst prepared)))
+                _ -> "NOERROR&" ++ envListToString (compareCalculatedWithFinal (checkP4 (fst (fst prepared)) (snd prepared) sidecons 0) (snd (fst prepared))) ++ "&" ++ (finalEnvListToString (snd (fst prepared))) ++ "&" ++ (initEnvListToString (fst (fst prepared)))
     where { prepared = (mainConversion (parseString program) ((initEnv, finalEnv), (initActions, initTables, initProg)));
         sidecons = sideConditionConversion conditions
         }

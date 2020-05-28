@@ -1,5 +1,5 @@
 module Main where
-import Verification
+import Checking
 import Parser
 import Preparation
 import System.IO
@@ -16,7 +16,7 @@ main = do
     let envs = fst out
     let prog = snd out
     let strprog = dataToString prog
-    let verifyenv = (verifyP4 (fst envs) prog empSideCons 0)
+    let verifyenv = (checkP4 (fst envs) prog empSideCons 0)
     let compare = compareCalculatedWithFinal verifyenv (snd envs)
     putStrLn "Initial:"
     mapM print (fst envs)

@@ -2,7 +2,7 @@ module Preparation where
 import Data.String
 import Data.List
 import Parser
-import Verification
+import Checking
 
 ------------------------------------- MAIN CONVERSION FUNCTIONS
 
