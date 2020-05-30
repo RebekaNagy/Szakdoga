@@ -1,8 +1,7 @@
-
 header ethernet_t {
-    bit<48> dstAddr;
-    bit<48> srcAddr;
-    bit<16> etherType;
+	bit<48> dstAddr;
+	bit<48> srcAddr;
+	bit<16> etherType;
 }
 
 header ipv4_t {
@@ -20,34 +19,20 @@ header ipv4_t {
     bit<32> dstAddr;
 }
 
-struct fwd_metadata_t {
-    bit<16> hash1;
-    bit<1>  nexthop_type;
-    bit<10> ecmp_group_idx;
-    bit<8>  ecmp_path_selector;
-    bit<32> l2ptr;
-    bit<24> out_bd;
+struct headers {
+    ethernet_t   ethernet;
+	ipv4_t       ipv4;
 }
 
-struct metadata_t {
-    fwd_metadata_t fwd_metadata;
-}
-
-struct headers_t {
-    ethernet_t ethernet;
-    ipv4_t     ipv4;
-}
-
-parser parserImpl(packet_in packet,
-                  out headers_t hdr,
-                  inout metadata_t meta,
-                  inout standard_metadata_t stdmeta)
-{
-    const bit<16> ETHERTYPE_IPV4 = 16w0x0800;
-
+parser MyParser(packet_in packet,
+                out headers hdr,
+                inout metadata meta,
+                inout standard_metadata_t standard_metadata) {
+                
     state start {
         transition parse_ethernet;
     }
+
     state parse_ethernet {
         packet.extract(hdr.ethernet);
         transition select(hdr.ethernet.etherType) {
@@ -55,75 +40,63 @@ parser parserImpl(packet_in packet,
             default: accept;
         }
     }
+    
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
         transition accept;
     }
 }
 
-control ingressImpl(inout headers_t hdr,
-                    inout metadata_t meta,
-                    inout standard_metadata_t stdmeta)
-{
-
-    action set_l2ptr_with_stat(bit<32> l2ptr) {
-        hdr.ethernet.setValid();
-        meta.fwd_metadata.l2ptr = l2ptr;
+control MyIngress(inout headers hdr,
+                  inout metadata meta,
+                  inout standard_metadata_t standard_metadata) {
+    
+    action mydrop() {
+        mark_to_drop();
     }
-    action set_ecmp_group_idx(bit<10> ecmp_group_idx) {
-        meta.fwd_metadata.nexthop_type = NEXTHOP_TYPE_ECMP_GROUP_IDX;
-        meta.fwd_metadata.ecmp_group_idx = ecmp_group_idx;
+    
+    action ipv4_ch() {
+        hdr.ethernet.srcAddr = 2;
+        hdr.ethernet.dstAddr = 1;
+        hdr.ipv4.ttl = 20;
     }
-    action my_drop_with_stat() {
-        mark_to_drop(stdmeta);
-    }
-    table ipv4_da_lpm {
+    
+    table ipv4_lpm {
         key = {
             hdr.ipv4.dstAddr: lpm;
         }
         actions = {
-            set_l2ptr_with_stat;
-            set_ecmp_group_idx;
-            my_drop_with_stat;
-        }
-        default_action = my_drop_with_stat;
-    }
-
-    action set_l2ptr(bit<32> l2ptr) {
-        hdr.ipv4.setInvalid();
-        meta.fwd_metadata.l2ptr = l2ptr;
-    }
-    table ecmp_group {
-        key = {
-            meta.fwd_metadata.ecmp_group_idx: exact;
-        }
-        actions = {
-            set_l2ptr;
+            ipv4_ch;
+            mydrop;
             NoAction;
         }
-        default_action = NoAction;
-    }
-
-    table ecmp_path {
-        key = {
-            meta.fwd_metadata.ecmp_group_idx    : exact;
-            meta.fwd_metadata.ecmp_path_selector: exact;
-        }
-        actions = {
-            set_l2ptr;
-            @default_only NoAction;
-        }
-        default_action = NoAction();
-        size = 32768;
+        size = 1024;
+        default_action = drop();
     }
 
     action my_drop() {
         mark_to_drop(stdmeta);
     }
-    action set_bd_dmac_intf(bit<24> bd, bit<48> dmac, bit<9> intf) {
-        meta.fwd_metadata.out_bd = bd;
-        hdr.ethernet.dstAddr = dmac;
-        stdmeta.egress_spec = intf;
+    action rewrite_mac() {
+        hdr.ethernet.srcAddr = 5;
+        hdr.ipv4.setInvalid();
+    }
+    table send_frame {
+        key = {
+            hdr.ethernet.dstAddr: exact;
+        }
+        actions = {
+            rewrite_mac;
+            my_drop;
+        }
+        default_action = my_drop;
+    }
+
+    action my_drop() {
+        mark_to_drop(stdmeta);
+    }
+    action set_bd_dmac_intf() {
+        hdr.ethernet.dstAddr = 3;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
     table mac_da {
@@ -136,27 +109,26 @@ control ingressImpl(inout headers_t hdr,
         }
         default_action = my_drop;
     }
-
+    
     apply {
-        compute_ipv4_hashes.apply();
-        ipv4_da_lpm.apply();
-        if (meta.fwd_metadata.nexthop_type != NEXTHOP_TYPE_L2PTR) {
-            ecmp_group.apply();
-            if (meta.fwd_metadata.nexthop_type != NEXTHOP_TYPE_L2PTR) {
-                ecmp_path.apply();
+        if (hdr.ipv4.isValid()) {
+            ipv4_lpm.apply();
+        }
+        else 
+        {
+            if(hdr.ethernet.isValid())
+            {                            
+                send_frame.apply();
             }
+            mac_da.apply();
         }
         mac_da.apply();
     }
 }
 
-control deparserImpl(packet_out packet,
-                     in headers_t hdr)
-{
+control MyDeparser(packet_out packet, in headers hdr) {
     apply {
         packet.emit(hdr.ethernet);
         packet.emit(hdr.ipv4);
     }
 }
-
-

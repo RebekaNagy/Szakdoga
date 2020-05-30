@@ -92,8 +92,8 @@ prFunc_Action envlist name program sideconditions number =
 
 prFunc_If :: [IdEnvironment] -> [String] -> Program -> Program -> SideCondition -> Int -> [IdEnvironment]
 prFunc_If envlist conditions ifprogram elseprogram sideconditions@(SideCon (ifCondition, _, _, _, _)) number = newStuckEnvlist ++
-    (checkP4 (map (\(id, envtype, env) -> (id++"$"++(show number)++"if", NoMatch, env)) filteredEnvlist) ifprogram sideconditions (number+1)) ++
-    (checkP4 (map (\(id, envtype, env) -> (id++"$"++(show number)++"else", NoMatch, env)) filteredEnvlist) elseprogram sideconditions (number+1))
+    (checkP4 (map (\(id, envtype, env) -> (id++"$"++(show number)++"if", NoMatch, env)) filteredEnvlist) ifprogram sideconditions (number+10)) ++
+    (checkP4 (map (\(id, envtype, env) -> (id++"$"++(show number)++"else", NoMatch, env)) filteredEnvlist) elseprogram sideconditions (number+20))
     where { filteredEnvlist = (filter (\(id, envtype, env) -> (check_If env ifCondition conditions)) envlist) ;
         stuckEnvList = (filter (\(id, envtype, env) -> (check_If env ifCondition conditions) == False) envlist) ;
         newStuckEnvlist = map (\(id, envtype, env) -> (id, Stuck, env)) stuckEnvList
@@ -101,10 +101,10 @@ prFunc_If envlist conditions ifprogram elseprogram sideconditions@(SideCon (ifCo
 
 prFunc_Seq :: [IdEnvironment] -> Program -> Program -> SideCondition -> Int -> [IdEnvironment]
 prFunc_Seq envlist firstprogram secondprogram sideconditions number = 
-    stuckEnvList ++ stuckSeqEnvlist ++ (checkP4 (filteredSeqEnvlist) secondprogram sideconditions (number+1))
+    stuckEnvList ++ stuckSeqEnvlist ++ (checkP4 (filteredSeqEnvlist) secondprogram sideconditions (number+100))
     where  { filteredEnvlist = (filter (\(id, envtype, env) -> envtype /= Stuck) envlist) ;
         stuckEnvList = (filter (\(id, envtype, env) -> envtype == Stuck) envlist) ;
-        betweenEnv = (checkP4 filteredEnvlist firstprogram sideconditions number) ;
+        betweenEnv = (checkP4 filteredEnvlist firstprogram sideconditions (number)) ;
         filteredSeqEnvlist = (filter (\(id, envtype, env) -> envtype /= Stuck) betweenEnv) ;
         stuckSeqEnvlist = (filter (\(id, envtype, env) -> envtype == Stuck) betweenEnv)
     }

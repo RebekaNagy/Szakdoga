@@ -28,7 +28,7 @@ parser MyParser(packet_in packet,
                 out headers hdr,
                 inout metadata meta,
                 inout standard_metadata_t standard_metadata) {
-				
+                
     state start {
         transition parse_ethernet;
     }
@@ -59,7 +59,6 @@ control MyIngress(inout headers hdr,
         hdr.ethernet.srcAddr = 2;
         hdr.ethernet.dstAddr = 1;
         hdr.ipv4.ttl = 20;
-        hdr.ipv4.setInvalid();
     }
     
     table ipv4_lpm {
@@ -78,8 +77,9 @@ control MyIngress(inout headers hdr,
     action my_drop() {
         mark_to_drop(stdmeta);
     }
-    action rewrite_mac(bit<48> smac) {
-        hdr.ethernet.srcAddr = smac;
+    action rewrite_mac() {
+        hdr.ethernet.srcAddr = 3;
+        hdr.ipv4.setInvalid();
     }
     table send_frame {
         key = {
@@ -96,7 +96,7 @@ control MyIngress(inout headers hdr,
         if (hdr.ipv4.isValid()) {
             ipv4_lpm.apply();
         }
-        send_fram.apply();
+        send_frame.apply();
     }
 }
 
